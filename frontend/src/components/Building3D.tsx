@@ -8,8 +8,7 @@ const STEP = 2.45;   // natural slab spacing (fh 2.2 + 0.25 gap)
 const SPREAD = 1.4;  // extra explode gap per floor — uniform, overlap-free (2.45+1.4 > 2.2)
 
 /** Procedural 3D building: stacked floor volumes, symmetric exploded view, unit subdivision,
- *  isolated single-floor mode with room tags, underground utilities.
- *  Architecture mirrors a Cesium 3D-Tiles loader: replace <ProceduralTiles> with Cesium Ion + 3D Tiles for production. */
+ *  isolated single-floor mode with room tags, underground utilities. */
 export default function Building3D({ building, selectedFloor, onFloor, selectedUnit, onUnit, exploded, underground, utilities, isolateFloor }:
   { building: BData; selectedFloor: string | null; onFloor: (fid: string) => void; selectedUnit: string | null;
     onUnit: (u: string) => void; exploded: boolean; underground: boolean; utilities: any[];

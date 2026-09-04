@@ -130,6 +130,20 @@ current rule handlers as fallback, keeping safe-tool (no-raw-SQL) and "requires 
 
 ## 10. Known limits / next steps (remaining)
 
+`data/` empty; mobile 3D is desktop-first; basemap needs internet (Carto); `/api/seed` +
+`/api/validation/run` are open demo endpoints (guard before any shared deployment).
+
+## 12. Iteration 3 — City 3D removed + dark command-center redesign (2026-09-04)
+
+City 3D (`/city`, Cesium) removed: tiles never loaded in the demo environment (black canvas),
+so the page, route, nav entry, `cesium`/`vite-plugin-cesium` deps and 16 MB asset payload are gone.
+Cesium Ion + 3D Tiles stay documented as the production path (`docs/FUTURE.md`); the Ion token in
+`.env` files is reserved for that. Full UI pass to a dark ops-console theme: design tokens
+(`night`/`accent` scales, Inter, favicon), shared `.panel/.btn/.input` classes, grouped sidebar +
+header with global search, split-screen login, dark dashboard/charts/drawer/copilot/QR pages,
+map legend overlay + hover popups kept, print stylesheet forced to light for reports.
+Verification: **tsc clean · vitest 4/4** (backend untouched, still 8/8).
+
 `data/` empty; mobile 3D is desktop-first; basemap needs internet (Carto); OSM footprints won't
 align 1:1 with demo parcels (tower viewer stays system of record); `/api/seed` + `/validation/run`
 are open demo endpoints (guard before any shared deployment).

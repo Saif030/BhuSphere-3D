@@ -29,8 +29,7 @@ npm run dev
 ```
 Open http://localhost:5173 · login `officer / demo123` (also `surveyor`, `admin`, `public`).
 API docs: http://127.0.0.1:8000/docs
-City 3D (Cesium OSM + terrain) reads `VITE_CESIUM_ION_TOKEN` from `frontend/.env` — already configured.
-Without a token/internet it falls back to the tower viewer with a notice.
+(Cesium City 3D was removed from this build; Cesium Ion + 3D Tiles remain the documented production path.)
 
 Seed/reset demo DB: `POST /api/seed` or delete `backend/bhu.db` and restart.
 
@@ -43,7 +42,6 @@ Seed/reset demo DB: `POST /api/seed` or delete `backend/bhu.db` and restart.
 6. Tick **Underground mode** → water/electrical/telecom tubes; parcel shows 3 intersecting assets.
 7. Validation → B03: registered 29.4m vs LiDAR 32.8m (+3.4m) → Resolve.
 8. History (2024→2026) → QR tab → scan → public identity → Admin audit trail.
-9. City 3D → style presets (residential / risk radius / type filter) → click extrusion → Open tower.
 
 ## Project tree
 ```

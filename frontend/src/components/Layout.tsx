@@ -1,47 +1,81 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
-import { LayoutDashboard, Map as MapIcon, Box, Globe, ShieldAlert, Cable, Bot, FileText, Settings, LogOut } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { LayoutDashboard, Map as MapIcon, Box, ShieldAlert, Cable, Bot, FileText, Settings, LogOut, Search } from 'lucide-react';
 import { useStore } from '../lib/store';
 
-const NAV = [
-  ['/', 'Overview', LayoutDashboard], ['/map', 'Map', MapIcon], ['/city', 'City 3D', Globe], ['/3d', '3D Cadastre', Box],
-  ['/validation', 'Validation', ShieldAlert], ['/infrastructure', 'Infrastructure', Cable],
-  ['/reports', 'Reports', FileText], ['/admin', 'Admin', Settings],
+const GROUPS: { title: string; items: [string, string, any][] }[] = [
+  { title: 'Explore', items: [
+    ['/', 'Overview', LayoutDashboard], ['/map', '2D Map', MapIcon], ['/3d', '3D Cadastre', Box]] },
+  { title: 'Govern', items: [
+    ['/validation', 'Validation', ShieldAlert], ['/infrastructure', 'Infrastructure', Cable], ['/reports', 'Reports', FileText]] },
+  { title: 'System', items: [['/admin', 'Admin', Settings]] },
 ];
+
 function Toast() {
   const { toast, setToast } = useStore();
   useEffect(() => { if (toast) { const t = setTimeout(() => setToast(null), 3500); return () => clearTimeout(t); } }, [toast]);
   if (!toast) return null;
-  return <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-navy text-white text-sm rounded-lg px-4 py-2 shadow-xl z-[60]">{toast}</div>;
+  return <div role="status" className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-accent-400 text-night-950 text-sm font-medium rounded-lg px-4 py-2 shadow-panel z-[60]">{toast}</div>;
 }
+
 export default function Layout({ children, onCopilot }: { children: React.ReactNode; onCopilot: () => void }) {
   const { auth, setAuth } = useStore(); const nav = useNavigate();
+  const [sq, setSq] = useState('');
+  const goSearch = () => { if (sq.trim()) nav('/map?q=' + encodeURIComponent(sq.trim())); };
   return (
-    <div className="flex h-screen">
-      <aside className="w-16 md:w-56 bg-navy text-slate-200 flex flex-col shrink-0">
-        <div className="p-4 border-b border-white/10"><div className="font-bold text-white text-lg hidden md:block">BhuSphere 3D</div>
-          <div className="font-bold text-white md:hidden">B3D</div>
-          <div className="text-[11px] text-sky-300 hidden md:block">3D Cadastral Intelligence Platform</div></div>
-        <nav className="flex-1 p-2 space-y-1 overflow-y-auto" aria-label="Primary">
-          {NAV.map(([to, label, Icon]: any) => (
-            <NavLink key={to} to={to} title={label as string} className={({ isActive }) => `flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${isActive ? 'bg-white/15 text-white' : 'hover:bg-white/5'}`}>
-              <Icon size={16} /><span className="hidden md:inline">{label}</span></NavLink>))}
-          <button onClick={onCopilot} title="AI Copilot" className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-sky-600 text-white hover:bg-sky-500 mt-2"><Bot size={16} /><span className="hidden md:inline">AI Copilot</span></button>
+    <div className="flex h-screen bg-night-900 text-slate-200">
+      <aside className="w-16 md:w-60 bg-night-950 border-r border-white/10 flex flex-col shrink-0">
+        <div className="px-4 py-4 border-b border-white/10">
+          <div className="font-extrabold text-white text-lg tracking-tight hidden md:block">BhuSphere <span className="text-accent-400">3D</span></div>
+          <div className="font-extrabold text-accent-400 md:hidden text-center">B3D</div>
+          <div className="text-[11px] text-slate-400 hidden md:block mt-0.5">3D Cadastral Intelligence Platform</div>
+        </div>
+        <nav className="flex-1 px-2 py-3 space-y-4 overflow-y-auto scrollthin" aria-label="Primary">
+          {GROUPS.map(g => (
+            <div key={g.title}>
+              <div className="hidden md:flex items-center gap-1.5 px-3 mb-1 th-label">{g.title}</div>
+              <div className="space-y-0.5">
+                {g.items.map(([to, label, Icon]: any) => (
+                  <NavLink key={to} to={to} title={label as string}
+                    className={({ isActive }) => `relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${isActive ? 'bg-white/10 text-white font-medium' : 'text-slate-400 hover:bg-white/5 hover:text-slate-100'}`}>
+                    {({ isActive }) => (<>
+                      {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-accent-400" />}
+                      <Icon size={17} className={isActive ? 'text-accent-400' : ''} /><span className="hidden md:inline">{label}</span>
+                    </>)}
+                  </NavLink>))}
+              </div>
+            </div>))}
+          <button onClick={onCopilot} title="AI Copilot"
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-accent-600 to-accent-400 text-night-950 hover:brightness-110 transition mt-2">
+            <Bot size={17} /><span className="hidden md:inline">AI Copilot</span></button>
         </nav>
-        <div className="p-3 border-t border-white/10 text-xs">
-          <div className="font-medium text-white hidden md:block">{auth?.username} · {auth?.role}</div>
-          <div className="text-slate-400 mb-2 hidden md:block">Prototype — not an official ULPIN</div>
-          <button onClick={() => { setAuth(null); nav('/login'); }} title="Logout" className="flex items-center gap-1 text-slate-300 hover:text-white"><LogOut size={13} /><span className="hidden md:inline">Logout</span></button>
+        <div className="p-3 border-t border-white/10">
+          <div className="hidden md:block px-1 mb-2">
+            <div className="text-xs font-semibold text-white capitalize">{auth?.username}</div>
+            <div className="text-[11px] text-accent-300 capitalize">{auth?.role} · demo session</div>
+          </div>
+          <button onClick={() => { setAuth(null); nav('/login'); }} title="Logout"
+            className="flex items-center gap-2 text-xs text-slate-400 hover:text-white px-1"><LogOut size={14} /><span className="hidden md:inline">Logout</span></button>
         </div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="bg-white border-b px-4 py-2 flex items-center gap-3 text-sm">
-          <span className="font-semibold text-navy">Vertical Property Mapping & Spatial Governance</span>
-          <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">SIH 2026 · PS-26011 · DEMO MODE</span>
+        <header className="bg-night-950/80 backdrop-blur border-b border-white/10 px-4 py-2.5 flex items-center gap-3">
+          <div className="min-w-0">
+            <div className="font-semibold text-white text-sm truncate">Vertical Property Mapping & Spatial Governance</div>
+            <div className="text-[11px] text-slate-500 hidden sm:block">SIH 2026 · Problem Statement 26011 · Prototype identifiers are not official ULPINs</div>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <div className="hidden md:flex items-center bg-night-800 border border-white/10 rounded-lg px-2.5 py-1.5 w-64 focus-within:border-accent-400">
+              <Search size={14} className="text-slate-500 shrink-0" />
+              <input value={sq} onChange={e => setSq(e.target.value)} onKeyDown={e => e.key === 'Enter' && goSearch()}
+                placeholder="Search ULPIN, parcel, building…" className="bg-transparent text-xs ml-1.5 w-full focus:outline-none placeholder:text-slate-500" />
+            </div>
+            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-400/15 text-amber-300 border border-amber-400/30 whitespace-nowrap">DEMO MODE</span>
+          </div>
         </header>
         <main className="flex-1 overflow-auto">{children}</main>
-        <Toast />
       </div>
+      <Toast />
     </div>
   );
 }

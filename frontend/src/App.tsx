@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Store, useStore } from './lib/store';
 import { ErrorBoundary } from './components/feedback';
@@ -11,20 +10,17 @@ import Dashboard from './pages/Dashboard';
 import MapPage from './pages/Map';
 import Viewer3D from './pages/Viewer3D';
 import Property from './pages/Property';
-import { ValidationPage, InfraPage, AdminPage } from './pages/Ops';
-
-// Cesium is heavy — split into its own chunk so the main bundle stays lean.
-const City3D = lazy(() => import('./pages/City3D'));
+import { ValidationPage, InfraPage, AdminPage, ReportsPage } from './pages/Ops';
 
 const qc = new QueryClient();
 function NotFound() {
   return (
     <div className="p-10 text-center text-sm">
-      <div className="font-bold text-lg text-navy">Page not found</div>
+      <div className="font-bold text-lg text-white">Page not found</div>
       <div className="text-slate-500 mt-1">The view you asked for doesn't exist in this demo.</div>
       <div className="flex gap-2 justify-center mt-4">
-        <Link to="/" className="bg-navy text-white rounded-lg px-4 py-1.5">Dashboard</Link>
-        <Link to="/map" className="border rounded-lg px-4 py-1.5">Map</Link>
+        <Link to="/" className="btn-primary">Dashboard</Link>
+        <Link to="/map" className="btn-ghost">Map</Link>
       </div>
     </div>
   );
@@ -38,11 +34,10 @@ function Shell() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/map" element={<MapPage />} />
-        <Route path="/city" element={<Suspense fallback={<div className="p-6 text-sm text-slate-500">Loading City 3D (Cesium)…</div>}><City3D /></Suspense>} />
         <Route path="/3d" element={<Viewer3D />} />
         <Route path="/validation" element={<ValidationPage />} />
         <Route path="/infrastructure" element={<InfraPage />} />
-        <Route path="/reports" element={<AdminPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/property/:ulpin" element={<Property />} />
         <Route path="*" element={<NotFound />} />
