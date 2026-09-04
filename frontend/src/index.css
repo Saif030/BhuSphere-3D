@@ -1,0 +1,13 @@
+@import 'maplibre-gl/dist/maplibre-gl.css';
+@tailwind base; @tailwind components; @tailwind utilities;
+html,body,#root{height:100%;}
+body{font-family:Inter,system-ui,sans-serif;background:#f1f5f9;}
+.glass{background:rgba(255,255,255,.92);backdrop-filter:blur(8px);}
+.scrollthin::-webkit-scrollbar{width:6px;height:6px}
+.scrollthin::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:4px}
+:focus-visible{outline:2px solid #0284c7;outline-offset:1px}
+@media print {
+  aside, header, .no-print{display:none !important}
+  main{overflow:visible !important}
+  body{background:#fff}
+}

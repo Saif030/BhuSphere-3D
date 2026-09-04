@@ -1,0 +1,34 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://bhu:bhu@db:5432/bhu
+      - JWT_SECRET=${JWT_SECRET:-dev-secret}
+      - DEMO_MODE=true
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/code
+
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      - POSTGRES_USER=bhu
+      - POSTGRES_PASSWORD=bhu
+      - POSTGRES_DB=bhu
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
