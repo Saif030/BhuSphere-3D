@@ -61,4 +61,4 @@ Keycloak/Merkle audit, LangGraph RAG over approval/floor-plan docs. See `docs/FU
 
 ## Tests
 `cd backend && python -m pytest tests/ -q` (8 tests: health, auth, parcel→unit chain, AI, ULPIN, validation run+review, pagination, AI fallback).
-`cd frontend && npm test` (vitest: ULPIN deep-link helpers).
+`cd frontend && npm test` (vitest: ULPIN deep-link helper).
