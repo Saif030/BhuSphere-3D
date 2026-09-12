@@ -27,21 +27,23 @@ cd frontend
 npm install
 npm run dev
 ```
-Open http://localhost:5173 · login `officer / demo123` (also `surveyor`, `admin`, `public`).
+Open http://localhost:5173 · login `officer / demo123` (also `surveyor`, `admin`, `citizen`, `public`).
 API docs: http://127.0.0.1:8000/docs
 (Cesium City 3D was removed from this build; Cesium Ion + 3D Tiles remain the documented production path.)
 
 Seed/reset demo DB: `POST /api/seed` or delete `backend/bhu.db` and restart.
 
-## 3-minute demo script
-1. Dashboard → 12,482 parcels · 3,428 buildings · 18,764 units · 214 conflicts · 94.2%.
+## 3-minute demo script (or press **Present** for the guided tour)
+1. Dashboard → KPIs (toggle **City scale / Live demo**) → flagship Green Residency card.
 2. Map → search `Green Residency` → click **Building A** → **Open 3D View**.
 3. 3D → floors B2…F12 → click **F08** (exploded) → click unit **804**.
 4. Property: `DL-SKT-0182-B01-F08-U804`, 1,245 sq.ft, 24–27m, 96.4% + evidence tab.
 5. Copilot: *"Why is apartment A804 marked 96.4%?"* then *"Show buildings with height mismatch > 2m"* (map highlights).
 6. Tick **Underground mode** → water/electrical/telecom tubes; parcel shows 3 intersecting assets.
-7. Validation → B03: registered 29.4m vs LiDAR 32.8m (+3.4m) → Resolve.
+7. Validation → B03 case file: registered 29.4m vs LiDAR 32.8m (+3.4m) → Resolve → watch the audit trail grow.
 8. History (2024→2026) → QR tab → scan → public identity → Admin audit trail.
+9. Admin → upload a `data/sample-*.geojson` → preview on map → Accept & commit (goes live as Needs Review).
+10. Submit Data (citizen) → map-pick a property → measurements with m² conversion → documents → review diff → submit → track SUB-ID → officer queue → compare vs live record → field check → approve → record, evidence, history, audit all update.
 
 ## Project tree
 ```
@@ -53,12 +55,13 @@ data/ docs/ scripts/ docker-compose.yml .env.example
 
 ## API (see /docs)
 `GET /api/parcels /parcels/{id} /buildings /buildings/{p}/{b} /floors/{id} /units/{ulpin} /properties/{ulpin}{/sources,/history,/validation} /utilities /dashboard/stats /validation/issues /audit`
-`POST /api/auth/login /api/seed /api/validation/run /validation/{id}/review /api/ulpin/generate /api/search /api/ai/query /api/data/import`
+`POST /api/auth/login /api/seed /api/validation/run /validation/{id}/review /api/validation/case/{entity} /api/ulpin/generate /api/search /api/ai/query /api/data/import /api/data/commit`
+Submission intake: `POST+GET /api/submissions` `/my` `/queue` `/{sid}` `PUT /{sid}` `/{sid}/submit|review|resubmit|field-verification|documents|history` `POST /api/submissions/check-duplicates` `POST /api/field-verification/{fvid}/result` `GET /api/uploads/{f}` `GET /api/notifications` `GET /api/dashboard/submissions`
 
 ## Production path
 PostGIS+pgvector, Cesium Ion + 3D Tiles, CityGML/LADM, Bhu-Naksha/registration/CORS integrations,
 Keycloak/Merkle audit, LangGraph RAG over approval/floor-plan docs. See `docs/FUTURE.md`.
 
 ## Tests
-`cd backend && python -m pytest tests/ -q` (8 tests: health, auth, parcel→unit chain, AI, ULPIN, validation run+review, pagination, AI fallback).
-`cd frontend && npm test` (vitest: ULPIN deep-link helpers).
+`cd backend && python -m pytest tests/ -q` (14 tests: prior suite + B03 case, import breakdown, commit flow, citizen approve loop, govt fast path, validation/duplicates).
+`cd frontend && npm test` (vitest: ULPIN deep-link helpers + tour script + intake conversion/blocks).

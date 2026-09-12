@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Play, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { Play, ChevronLeft, ChevronRight, ArrowLeft, FileWarning } from 'lucide-react';
 import { api } from '../lib/api';
 import { entity3DLink as entityLink } from '../lib/nav';
 import { useStore } from '../lib/store';
@@ -39,7 +39,7 @@ export function ValidationPage() {
       <div className="text-xs text-slate-500">{list.length} issues · page {page + 1}/{pages}</div>
       {isLoading && <div className="text-sm text-slate-400">Loading issues…</div>}
       {!isLoading && !list.length && <Empty text="No issues match these filters." />}
-      <div className="grid md:grid-cols-2 gap-3">
+      <div className="grid md:grid-cols-2 gap-3" data-tour="tour-validation">
         {view.map((i: any) => (
           <div key={i.id} className={`panel p-4 text-sm border-l-2 ${i.severity === 'High' ? '!border-l-red-400' : i.severity === 'Medium' ? '!border-l-amber-400' : '!border-l-sky-400'}`}>
             <div className="flex gap-2 items-center flex-wrap"><b className="text-white">{i.type}</b><StatusBadge s={i.severity} /><StatusBadge s={i.status} />
@@ -50,6 +50,7 @@ export function ValidationPage() {
             <div className="text-[11px] text-accent-300 mt-1">→ {i.action}</div>
             <div className="flex gap-1.5 mt-2.5 flex-wrap">
               {entityLink(i.entity) && <Link to={entityLink(i.entity)!} className="text-[11px] font-semibold bg-accent-400 text-night-950 rounded-md px-2.5 py-1">Open in 3D</Link>}
+              <Link to={`/validation/case/${i.entity}`} className="text-[11px] font-semibold border border-white/15 text-slate-200 rounded-md px-2.5 py-1 hover:bg-white/5">Case file →</Link>
               {['Under Review', 'Resolved', 'Rejected'].map(s =>
                 <button key={s} className="btn-ghost !text-[11px] !py-1" onClick={() => review(i.id, s)}>{s}</button>)}
             </div>
@@ -64,6 +65,81 @@ export function ValidationPage() {
 }
 
 const UCOLOR: any = { Water: 'bg-sky-400', Electrical: 'bg-yellow-400', Sewer: 'bg-violet-400', Telecom: 'bg-emerald-400', Gas: 'bg-rose-400', Transport: 'bg-slate-300' };
+
+/** Case file: one entity's full story — snapshot, measurements, evidence, history, live audit. */
+export function ValidationCase() {
+  const { entity } = useParams();
+  const { data, refetch, isLoading, isError } = useQuery({
+    queryKey: ['case', entity], queryFn: () => api.get('/api/validation/case/' + entity), retry: 1 });
+  const { setToast } = useStore();
+  const review = async (id: string, s: string) => {
+    try {
+      await api.post(`/api/validation/${id}/review`, { status: s, user: 'demo-officer' });
+      setToast(`Issue marked ${s} — audit trail updated below`); refetch();
+    } catch (e: any) { setToast('Review failed: ' + e.message); }
+  };
+  if (isLoading) return <div className="p-6 text-sm text-slate-400">Opening case file…</div>;
+  if (isError || !data) return (
+    <div className="p-6 text-sm max-w-xl mx-auto text-center">
+      <FileWarning size={26} className="text-slate-600 mx-auto mb-2" />
+      <div className="font-bold text-white text-lg">No case file for this entity</div>
+      <Link to="/validation" className="btn-primary inline-block mt-4">Back to Validation Center</Link>
+    </div>);
+  const s = data.snapshot || {};
+  const maxH = Math.max(s.registered_height_m || 0, s.lidar_height_m || 0, 1);
+  const bar = (v: number, cls: string) => (
+    <div className="flex items-center gap-2 text-xs">
+      <div className="flex-1 h-4 bg-white/[0.06] rounded-md overflow-hidden">
+        <div className={`h-full rounded-md ${cls}`} style={{ width: `${Math.max(4, (v / maxH) * 100)}%` }} /></div>
+      <span className="w-16 text-right font-mono text-slate-200">{v.toFixed(1)} m</span>
+    </div>);
+  return (
+    <div className="p-5 space-y-4 max-w-[1000px] mx-auto" data-tour="tour-case">
+      <Link to="/validation" className="text-xs text-accent-400 flex items-center gap-1 w-fit"><ArrowLeft size={13} />Validation Center</Link>
+      <PageHeader title="Case file" sub="One entity, full evidence story — snapshot, measurements, history, audit"
+        actions={entityLink(data.entity) ? <Link to={entityLink(data.entity)!} className="btn-primary !py-1.5">Open in 3D →</Link> : undefined} />
+      <div className="panel-pad">
+        <div className="font-mono font-bold text-accent-300">{data.entity}</div>
+        <div className="text-xs text-slate-400 mt-0.5">{s.name || s.kind} {s.parcel ? `· Parcel ${s.parcel}` : ''}</div>
+        {s.kind === 'building' && (
+          <div className="mt-3 space-y-1.5">
+            <div className="text-[11px] text-slate-500">Registered height</div>{bar(s.registered_height_m, 'bg-sky-400')}
+            <div className="text-[11px] text-slate-500">LiDAR-derived height</div>{bar(s.lidar_height_m, 'bg-red-400')}
+            <div className="text-xs mt-1">Difference: <b className="text-red-300 font-mono">+{s.difference_m} m</b>
+              <span className="text-slate-500"> · {s.floors} floors · {s.confidence}% · </span><StatusBadge s={s.status} /></div>
+          </div>)}
+      </div>
+      <div className="space-y-2.5">
+        <div className="text-sm font-bold text-white">Findings ({data.issues.length})</div>
+        {data.issues.map((i: any) => (
+          <div key={i.id} className="panel p-4 text-sm">
+            <div className="flex gap-2 items-center flex-wrap"><b className="text-white">{i.type}</b>
+              <StatusBadge s={i.severity} /><StatusBadge s={i.status} />
+              <span className="ml-auto text-[11px] text-slate-500">AI {i.confidence}%</span></div>
+            <div className="text-xs text-slate-300 mt-1.5">{i.description}</div>
+            <div className="text-[11px] text-slate-500 mt-1">Evidence: {(i.evidence || []).join(', ')}</div>
+            <div className="text-[11px] text-accent-300 mt-1">→ {i.action}</div>
+            <div className="flex gap-1.5 mt-2.5">
+              {['Under Review', 'Resolved', 'Rejected'].map(st =>
+                <button key={st} className="btn-ghost !text-[11px] !py-1" onClick={() => review(i.id, st)}>{st}</button>)}
+            </div>
+          </div>))}
+      </div>
+      {!!data.history?.length && (
+        <div className="panel-pad"><div className="font-semibold text-sm text-white mb-2">History</div>
+          <div className="text-xs space-y-2">{data.history.map((h: any, j: number) => (
+            <div key={j} className="flex gap-2.5"><div className="w-2 h-2 rounded-full bg-accent-400 mt-1 shrink-0" />
+              <div className="text-slate-300"><b className="text-slate-100">{h.timestamp}</b> — {h.event}<div className="text-slate-500">{h.description}</div></div></div>))}
+          </div></div>)}
+      <div className="panel-pad"><div className="font-semibold text-sm text-white mb-2">Live audit trail <span className="text-[11px] font-normal text-slate-500">(newest first — resolve above and watch it grow)</span></div>
+        <div className="text-xs space-y-1">{(data.audit || []).map((a: any, j: number) => (
+          <div key={j} className="border-b border-white/5 py-1.5 text-slate-300 font-mono !text-[11px]">{a.time} · {a.user}({a.role}) · {a.action}</div>))}
+          {!data.audit?.length && <div className="text-slate-500 text-xs">No audit rows yet for this entity — take an action above.</div>}
+        </div></div>
+    </div>
+  );
+}
+
 export function InfraPage() {
   const { data } = useQuery({ queryKey: ['u'], queryFn: () => api.get('/api/utilities') });
   const [f, setF] = useState('');
@@ -181,6 +257,7 @@ export function AdminPage() {
   const { data: stats } = useQuery({ queryKey: ['st'], queryFn: () => api.get('/api/dashboard/stats') });
   const { setToast } = useStore();
   const [auditQ, setAuditQ] = useState('');
+  const [lastImport, setLastImport] = useState<any>(null);
   const filteredAudit = (audit || []).filter((a: any) =>
     !auditQ || `${a.time} ${a.user} ${a.role} ${a.action} ${a.entity}`.toLowerCase().includes(auditQ.toLowerCase()));
   const exportAudit = () => {
@@ -218,8 +295,9 @@ export function AdminPage() {
           <button onClick={saveTh} className="btn-primary">Save</button>
         </div></div>
       <div className="panel-pad"><div className="font-semibold text-white mb-1">Data ingestion <span className="text-[11px] font-normal text-slate-500">(prototype)</span></div>
-        <div className="text-xs text-slate-500">Upload GeoJSON/JSON (features counted → validate → preview → map → process). CSV/KML parsing is simulated in demo.</div>
-        <label className="btn-ghost inline-block mt-2.5 cursor-pointer">Choose file…
+        <div className="text-xs text-slate-500">Upload GeoJSON/JSON (validate → <b>preview on map</b> → accept & commit, or discard). Committed records go live as Needs Review. CSV/KML parsing is simulated in demo.</div>
+        <div className="flex flex-wrap gap-2 items-center mt-2.5">
+        <label className="btn-ghost inline-block cursor-pointer">Choose file…
           <input type="file" accept=".geojson,.json,.csv,.kml" className="hidden" onChange={async (e) => {
             const f = e.target.files?.[0]; if (!f) return;
             try {
@@ -228,10 +306,17 @@ export function AdminPage() {
               try { const j = JSON.parse(text); feats = j.features || j.parcels || []; }
               catch { feats = text.split('\n').filter(l => l.trim()).map((_, i) => ({ row: i })); }
               const r = await api.post('/api/data/import', { features: feats, filename: f.name });
-              setToast(`Import validated: ${r.received} features from ${f.name}`);
+              const det = r.by_type ? ' (' + Object.entries(r.by_type).map(([k, v]) => `${v} ${k}`).join(', ') + ')' : '';
+              setLastImport({ filename: f.name, features: feats, received: r.received, det, bbox: r.bbox });
+              setToast(`Import validated: ${r.received} features${det} from ${f.name}`);
             } catch (err: any) { setToast('Import failed: ' + err.message); }
             e.target.value = '';
-          }} /></label></div>
+          }} /></label>
+        {lastImport && <Link to="/map" onClick={() => localStorage.setItem('bhu_preview', JSON.stringify(lastImport))}
+            className="btn-primary !py-1.5">Preview {lastImport.received} features on map →</Link>}
+        </div>
+        {lastImport && <div className="text-[11px] text-slate-500 mt-2">Last: {lastImport.filename} · {lastImport.received} features{lastImport.det} · bbox {lastImport.bbox ? lastImport.bbox.map((n: number) => n.toFixed(4)).join(', ') : '—'}</div>}
+        </div>
       <div className="panel-pad"><div className="font-semibold text-white mb-2.5">Audit trail</div>
         <div className="flex gap-2 mb-2.5">
           <input value={auditQ} onChange={e => setAuditQ(e.target.value)} placeholder="Filter user / action / entity…" className="input !text-xs flex-1" />

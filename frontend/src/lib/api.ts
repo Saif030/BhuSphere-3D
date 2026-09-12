@@ -9,6 +9,7 @@ async function req(path: string, opts: any = {}) {
 export const api = {
   get: (p: string) => req(p),
   post: (p: string, b: any = {}) => req(p, { method: 'POST', body: JSON.stringify(b) }),
+  put: (p: string, b: any = {}) => req(p, { method: 'PUT', body: JSON.stringify(b) }),
   login: (u: string, pw: string) => req('/api/auth/login', { method: 'POST', body: JSON.stringify({ username: u, password: pw }) }),
   search: (q: string) => req('/api/search?q=' + encodeURIComponent(q)),
   ai: (question: string) => req('/api/ai/query', { method: 'POST', body: JSON.stringify({ question }) }),

@@ -1,11 +1,20 @@
 """Deterministic cadastral copilot — safe structured tools only (no raw SQL)."""
 import re
 from sqlalchemy import func
-from .models import Parcel, Building, Floor, Unit, Utility, ValidationIssue
+from .models import Parcel, Building, Floor, Unit, Utility, ValidationIssue, Submission
 
 def answer_query(db, question: str):
     q = question.lower()
     highlights, rows, explain = [], [], ""
+    # submission intake status (advisory only — never approves)
+    if "submission" in q:
+        subs = db.query(Submission).order_by(Submission.created_at.desc()).limit(20).all()
+        pend = [s for s in subs if s.status in ("PENDING_VERIFICATION", "UNDER_VERIFICATION", "FIELD_CHECK")]
+        for s in subs[:10]:
+            rows.append({"Submission": s.submission_id, "Type": s.property_type,
+                         "Status": s.status, "Source": s.source_type})
+        return {"answer": f"{len(pend)} submission(s) awaiting human verification out of {len(subs)} recent. Advisory only — approval is a human officer action.",
+                "count": len(subs), "rows": rows, "highlights": [], "confidence": 90}
     # height mismatch
     if "height" in q and ("mismatch" in q or "differ" in q or "lidar" in q):
         m = re.search(r"(\d+(?:\.\d+)?)\s*m", q)

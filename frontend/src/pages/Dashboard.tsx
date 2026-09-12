@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPinned, Building2, Boxes, BadgeCheck, AlertTriangle, Zap, Cable, Gauge, ArrowRight } from 'lucide-react';
 import { api } from '../lib/api';
+import { useStore } from '../lib/store';
 import { StatusBadge } from '../components/ui';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
 
@@ -22,10 +24,13 @@ function Kpi({ label, value, sub, to, icon: Icon, accent }: any) {
   );
 }
 
-function Section({ title, sub, children }: any) {
+function Section({ title, sub, actions, children }: any) {
   return (
     <section>
-      <div className="mb-2.5"><h2 className="text-sm font-bold text-white">{title}</h2>{sub && <div className="page-sub">{sub}</div>}</div>
+      <div className="mb-2.5 flex flex-wrap items-center gap-2">
+        <div><h2 className="text-sm font-bold text-white">{title}</h2>{sub && <div className="page-sub">{sub}</div>}</div>
+        {actions && <div className="ml-auto">{actions}</div>}
+      </div>
       {children}
     </section>
   );
@@ -35,22 +40,50 @@ export default function Dashboard() {
   const { data, isLoading, isError, refetch } = useQuery({ queryKey: ['stats'], queryFn: () => api.get('/api/dashboard/stats') });
   const d = data?.display; const dc = data?.demo_counts;
   const { data: issues } = useQuery({ queryKey: ['iss'], queryFn: () => api.get('/api/validation/issues') });
+  const { auth } = useStore();
+  const canSubmit = auth && ['citizen', 'officer', 'surveyor', 'admin'].includes(auth.role);
+  const { data: subs } = useQuery({ queryKey: ['sub-stats'], queryFn: () => api.get('/api/dashboard/submissions'), enabled: !!canSubmit });
+  // Honesty toggle: city-scale illustrative register vs the actual live demo dataset.
+  const [scale, setScale] = useState(() => localStorage.getItem('bhu_scale') || 'city');
+  const pick = (s: any) => { localStorage.setItem('bhu_scale', s); setScale(s); };
+  const live = scale === 'live';
+  const fmt = (v: any) => (typeof v === 'number' ? v.toLocaleString() : (v ?? '—'));
+  const K = (cityV: any, liveV: any, liveSub: string, citySub: string) =>
+    live ? { v: fmt(liveV), s: liveSub } : { v: fmt(cityV), s: citySub };
+  if (isLoading) return <div className="p-6 text-sm text-slate-400">Loading command center…</div>;
+  if (isError || !d) return <div className="p-6 text-sm text-slate-300">Could not load statistics. <button onClick={() => refetch()} className="text-accent-400 underline">Retry</button></div>;
+  const kParcels = K(d.parcels, dc?.parcels, 'live demo parcels', `demo loaded: ${dc?.parcels}`);
+  const kBld = K(d.buildings, dc?.buildings, 'live demo buildings', `demo: ${dc?.buildings}`);
+  const kUnits = K(d.units, dc?.units, 'live demo units', `demo: ${dc?.units}`);
+  const kVer = K(d.verified, dc?.verified, 'live verified units', `demo: ${dc?.verified}`);
+  const kRev = K(d.needs_review, dc?.needs_review, 'live units needing review', `demo: ${dc?.needs_review}`);
+  const kSpat = K(d.spatial_conflicts, dc?.issues, 'live open issues', `demo open: ${dc?.issues}`);
+  const kOwn = K(d.ownership_conflicts, dc?.ownership, 'live ownership findings', 'AI-assisted assessment');
+  const kUg = K(d.underground, dc?.utilities, 'live utility assets', `demo: ${dc?.utilities}`);
+  const kConf = K(d.avg_confidence + '%', (dc?.avg_confidence ?? '—') + '%', 'live mean confidence', `demo: ${dc?.avg_confidence}%`);
   if (isLoading) return <div className="p-6 text-sm text-slate-400">Loading command center…</div>;
   if (isError || !d) return <div className="p-6 text-sm text-slate-300">Could not load statistics. <button onClick={() => refetch()} className="text-accent-400 underline">Retry</button></div>;
   const sev = ['High', 'Medium', 'Low'].map(s => ({ name: s, n: (issues || []).filter((i: any) => i.severity === s).length }));
   return (
     <div className="p-5 space-y-6 max-w-[1400px] mx-auto">
-      <Section title="At a glance" sub="City-scale register alongside the live demo dataset">
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
-          <Kpi label="Total Parcels" value={d.parcels.toLocaleString()} sub={`demo loaded: ${dc?.parcels}`} to="/map" icon={MapPinned} accent="bg-accent-400" />
-          <Kpi label="Total Buildings" value={d.buildings.toLocaleString()} sub={`demo: ${dc?.buildings}`} to="/map" icon={Building2} accent="bg-accent-400" />
-          <Kpi label="Registered Units" value={d.units.toLocaleString()} sub={`demo: ${dc?.units}`} to="/map" icon={Boxes} accent="bg-accent-400" />
-          <Kpi label="Verified" value={d.verified.toLocaleString()} sub={`demo: ${dc?.verified}`} to="/validation" icon={BadgeCheck} accent="bg-emerald-400" />
-          <Kpi label="Needs Review" value={d.needs_review.toLocaleString()} sub={`demo: ${dc?.needs_review}`} to="/validation" icon={AlertTriangle} accent="bg-amber-400" />
-          <Kpi label="Spatial Conflicts" value={d.spatial_conflicts} sub={`demo open: ${dc?.issues}`} to="/validation" icon={Zap} accent="bg-red-400" />
-          <Kpi label="Ownership Conflicts" value={d.ownership_conflicts} sub="AI-assisted assessment" to="/validation" icon={AlertTriangle} accent="bg-red-400" />
-          <Kpi label="Underground Assets" value={d.underground.toLocaleString()} sub={`demo: ${dc?.utilities}`} to="/infrastructure" icon={Cable} accent="bg-sky-400" />
-          <Kpi label="Avg Confidence" value={d.avg_confidence + '%'} sub={`demo: ${dc?.avg_confidence}%`} to="/validation" icon={Gauge} accent="bg-emerald-400" />
+      <Section title="At a glance" sub={live ? 'Live demo dataset — every number is a real record below' : 'Illustrative city-scale register — switch to Live demo for real records'}
+        actions={
+          <div className="flex bg-night-950 border border-white/10 rounded-lg p-0.5 text-xs" role="group" aria-label="Number scale">
+            {(['city', 'live'] as const).map(s => (
+              <button key={s} onClick={() => pick(s)}
+                className={`px-3 py-1 rounded-md font-semibold capitalize transition-colors ${scale === s ? 'bg-accent-400 text-night-950' : 'text-slate-400 hover:text-white'}`}>
+                {s === 'city' ? 'City scale' : 'Live demo'}</button>))}
+          </div>}>
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3" data-tour="tour-kpis">
+          <Kpi label="Total Parcels" value={kParcels.v} sub={kParcels.s} to="/map" icon={MapPinned} accent="bg-accent-400" />
+          <Kpi label="Total Buildings" value={kBld.v} sub={kBld.s} to="/map" icon={Building2} accent="bg-accent-400" />
+          <Kpi label="Registered Units" value={kUnits.v} sub={kUnits.s} to="/map" icon={Boxes} accent="bg-accent-400" />
+          <Kpi label="Verified" value={kVer.v} sub={kVer.s} to="/validation" icon={BadgeCheck} accent="bg-emerald-400" />
+          <Kpi label="Needs Review" value={kRev.v} sub={kRev.s} to="/validation" icon={AlertTriangle} accent="bg-amber-400" />
+          <Kpi label="Spatial Conflicts" value={kSpat.v} sub={kSpat.s} to="/validation" icon={Zap} accent="bg-red-400" />
+          <Kpi label="Ownership Conflicts" value={kOwn.v} sub={kOwn.s} to="/validation" icon={AlertTriangle} accent="bg-red-400" />
+          <Kpi label="Underground Assets" value={kUg.v} sub={kUg.s} to="/infrastructure" icon={Cable} accent="bg-sky-400" />
+          <Kpi label="Avg Confidence" value={kConf.v} sub={kConf.s} to="/validation" icon={Gauge} accent="bg-emerald-400" />
           <div className="panel p-4 flex flex-col justify-between bg-gradient-to-br from-night-800 to-night-700 border-accent-400/20">
             <div><div className="text-sm font-bold text-white">Flagship demo: Green Residency</div>
             <div className="text-[11px] text-accent-300 mt-0.5">DL-SKT-0182 · 3 towers · 12/10/15 floors · B1/B2</div></div>
@@ -78,8 +111,16 @@ export default function Dashboard() {
             </ResponsiveContainer></div>
         </div>
       </Section>
-      <Section title="Needs attention" sub="Latest validation findings — click through to the Validation Center">
-        <div className="panel divide-y divide-white/5">
+      {!!canSubmit && (subs?.total || 0) > 0 && (
+      <Section title="Submission intake" sub="Property data flowing into the cadastre">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[['Total', subs.total, '/submit/my'], ['Pending verification', subs.by_status?.PENDING_VERIFICATION || 0, auth?.role === 'citizen' ? '/submit/my' : '/submit/queue'],
+            ['Citizen', subs.citizen, '/submit/queue'], ['Government', subs.government, '/submit/my']].map(([l, v, to]: any) =>
+            <Link key={l} to={to} className="panel p-4 block hover:border-accent-400/40 transition-colors">
+              <div className="th-label">{l}</div><div className="text-2xl font-extrabold text-white mt-1">{v}</div></Link>)}
+        </div>
+      </Section>)}
+      <Section title="Needs attention" sub="Latest validation findings — click through to the Validation Center">        <div className="panel divide-y divide-white/5">
           {(issues || []).slice(0, 8).map((i: any) => (
             <Link key={i.id} to="/validation" className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.03] text-xs">
               <StatusBadge s={i.severity} /><span className="text-slate-200 font-medium">{i.type}</span>

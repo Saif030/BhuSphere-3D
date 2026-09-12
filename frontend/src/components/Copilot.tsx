@@ -39,7 +39,7 @@ export default function Copilot({ open, onClose }: { open: boolean; onClose: () 
   if (!open) return null;
   const time = (d: any) => { try { return new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch { return ''; } };
   return (
-    <div className="fixed bottom-4 right-4 w-[400px] max-w-[92vw] h-[560px] max-h-[80vh] bg-night-800 border border-white/10 rounded-2xl shadow-panel flex flex-col z-50 overflow-hidden">
+    <div data-tour="tour-copilot" className="fixed bottom-4 right-4 w-[400px] max-w-[92vw] h-[560px] max-h-[80vh] bg-night-800 border border-white/10 rounded-2xl shadow-panel flex flex-col z-50 overflow-hidden">
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/10 bg-gradient-to-r from-night-900 to-night-800">
         <span className="p-1.5 rounded-lg bg-accent-400/15 border border-accent-400/30"><Bot size={16} className="text-accent-400" /></span>
         <div><div className="font-bold text-sm text-white">Cadastral Copilot</div>

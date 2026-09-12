@@ -1,15 +1,24 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 
 export type Sel = { kind: string; id: string } | null;
 
-/** 2D cadastral map: parcels + buildings + utilities, click-to-select, highlight support. */
-export default function Map2D({ onSelect, highlights, layerState }:
-  { onSelect: (s: Sel, extra?: any) => void; highlights: any[]; layerState: any }) {
+/** 2D cadastral map: parcels + buildings + utilities, click-to-select, highlight support.
+ *  `preview` renders an upload as a dashed-cyan overlay; `reloadToken` refetches base layers. */
+export default function Map2D({ onSelect, highlights, layerState, preview, reloadToken }:
+  { onSelect: (s: Sel, extra?: any) => void; highlights: any[]; layerState: any;
+    preview?: { features: any[]; bbox: number[] | null } | null; reloadToken?: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const selRef = useRef<Sel>(null);
   selRef.current = null;
+
+  const fetchBase = async () => Promise.all([
+    fetch('/api/parcels').then(r => r.json()),
+    fetch('/api/buildings').then(r => r.json()),
+    fetch('/api/utilities').then(r => r.json()),
+  ]);
 
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
@@ -21,11 +30,7 @@ export default function Map2D({ onSelect, highlights, layerState }:
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
     mapRef.current = map;
     map.on('load', async () => {
-      const [parcels, buildings, utils] = await Promise.all([
-        fetch('/api/parcels').then(r => r.json()),
-        fetch('/api/buildings').then(r => r.json()),
-        fetch('/api/utilities').then(r => r.json()),
-      ]);
+      const [parcels, buildings, utils] = await fetchBase();
       const pGeo = { type: 'FeatureCollection', features: parcels.map((p: any) => ({
         type: 'Feature', properties: { id: p.parcel_id, conf: p.confidence, status: p.verification_status },
         geometry: { type: 'Polygon', coordinates: [p.geometry] } })) };
@@ -75,9 +80,49 @@ export default function Map2D({ onSelect, highlights, layerState }:
         const id = e.features?.[0]?.properties?.id;
         onSelect({ kind: 'utility', id }, null);
       });
+      setLoaded(true);
     });
     return () => {};
   }, []);
+
+  // refetch base layers (e.g. after an upload commit)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded || !reloadToken) return;
+    (async () => {
+      try {
+        const [parcels, buildings, utils] = await fetchBase();
+        (map as any)._raw = { parcels, buildings };
+        (map.getSource('parcels') as any)?.setData({ type: 'FeatureCollection', features: parcels.map((p: any) => ({
+          type: 'Feature', properties: { id: p.parcel_id, conf: p.confidence, status: p.verification_status },
+          geometry: { type: 'Polygon', coordinates: [p.geometry] } })) });
+        (map.getSource('buildings') as any)?.setData({ type: 'FeatureCollection', features: buildings.map((b: any) => ({
+          type: 'Feature', properties: { id: b.key, name: b.name, conf: b.confidence },
+          geometry: { type: 'Polygon', coordinates: [b.geometry] } })) });
+        (map.getSource('utils') as any)?.setData({ type: 'FeatureCollection', features: utils.map((u: any) => ({
+          type: 'Feature', properties: { id: u.utility_id, type: u.type },
+          geometry: { type: 'LineString', coordinates: u.geometry } })) });
+      } catch {}
+    })();
+  }, [reloadToken, loaded]);
+
+  // upload preview overlay: dashed-cyan shapes + auto-zoom to their bbox
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded) return;
+    ['preview-fill', 'preview-line'].forEach(l => { if (map.getLayer(l)) map.removeLayer(l); });
+    if (map.getSource('preview')) map.removeSource('preview');
+    if (!preview?.features?.length) return;
+    try {
+      map.addSource('preview', { type: 'geojson', data: { type: 'FeatureCollection', features: preview.features } as any });
+      map.addLayer({ id: 'preview-fill', type: 'fill', source: 'preview',
+        filter: ['==', ['geometry-type'], 'Polygon'],
+        paint: { 'fill-color': '#22d3ee', 'fill-opacity': 0.22 } });
+      map.addLayer({ id: 'preview-line', type: 'line', source: 'preview',
+        paint: { 'line-color': '#22d3ee', 'line-width': 2.5, 'line-dasharray': [3, 2] } });
+      if (preview.bbox) map.fitBounds([[preview.bbox[0], preview.bbox[1]], [preview.bbox[2], preview.bbox[3]]], { padding: 60, duration: 1000 });
+    } catch {}
+  }, [preview, loaded]);
 
   // apply layer toggles + highlights (all entity types resolve to a map center)
   const centroid = (ring: any[]) => {

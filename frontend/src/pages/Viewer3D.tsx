@@ -15,7 +15,7 @@ export default function Viewer3D() {
   const [exploded, setExploded] = useState(true);
   const [underground, setUnderground] = useState(false);
   const [viewKey, setViewKey] = useState(0);
-  const [isolated, setIsolated] = useState(false);
+  const [isolated, setIsolated] = useState(sp.get('iso') === '1');
   const [tab, setTab] = useState<'info' | 'evidence' | 'history' | 'qr' | 'report'>('info');
 
   const { data: buildings } = useQuery({ queryKey: ['blds'], queryFn: () => api.get('/api/buildings') });
@@ -37,12 +37,16 @@ export default function Viewer3D() {
     setFloorId(null); setUnitId(null); setIsolated(false); needFloor.current = true; needUnit.current = true;
   }, [bkey]);
   // Keep the URL in sync so back-button, QR, copilot and validation links all deep-link here.
+  // `iso` is carried through so shared/tour links keep opening the isolated floor view.
   useEffect(() => {
     const p: any = { b: bkey };
     if (floorId) p.f = floorId;
     if (unitId) p.u = unitId;
+    if (sp.get('iso') === '1') p.iso = '1';
     setSp(p, { replace: true });
   }, [bkey, floorId, unitId]);
+  // Allow entry deep-links (tour, shared links) to open the isolated floor view.
+  useEffect(() => { if (sp.get('iso') === '1' && floorId) setIsolated(true); }, [sp]);
   useEffect(() => {
     if (needFloor.current && b?.floor_list?.length) {
       const list = b.floor_list;
@@ -80,13 +84,13 @@ export default function Viewer3D() {
         </div>
         {bLoading && <Skeleton className="h-[520px]" />}
         {bError && <Empty text="Could not load this building. It may not exist — pick another tower above." />}
-        {isolated && floor && <div className="bg-orange-500 text-white text-xs rounded-xl px-3 py-2 mb-2 flex items-center gap-2">
+        {isolated && floor && <div data-tour="tour-isolate" className="bg-orange-500 text-white text-xs rounded-xl px-3 py-2 mb-2 flex items-center gap-2">
           <span>Isolated view: <b>{floor.label}</b> · {floor.z_min}–{floor.z_max}m · all {floor.units?.length || 0} units with room tags</span>
           <button onClick={() => setIsolated(false)} className="ml-auto bg-white text-orange-700 font-semibold rounded-lg px-3 py-1">← Back to tower</button>
         </div>}
-        {b && !bError && <Building3D key={viewKey} building={b} selectedFloor={floorId} onFloor={(f) => { setFloorId(f); setUnitId(null); }}
+        {b && !bError && <div data-tour="tour-3d"><Building3D key={viewKey} building={b} selectedFloor={floorId} onFloor={(f) => { setFloorId(f); setUnitId(null); }}
           selectedUnit={unitId} onUnit={(u) => setUnitId(u)} exploded={exploded && !isolated} underground={underground} utilities={utils || []}
-          isolateFloor={isolated ? floor : null} />}
+          isolateFloor={isolated ? floor : null} /></div>}
         <div className="panel px-3 py-2 text-[11px] text-slate-400">Legend:
           {isolated
             ? <><span className="inline-block w-2 h-2 rounded-sm bg-blue-700 ml-1" /> floor slab
@@ -103,7 +107,7 @@ export default function Viewer3D() {
       </div>
       <div className="space-y-3">
         {/* vertical tower rail — mirrors the 3D stack: roof on top, basements below */}
-        <div className="panel p-3">
+        <div className="panel p-3" data-tour="tour-rail">
           <div className="text-xs font-semibold text-slate-200 mb-2">{bLoading ? 'Loading building…' : `${b?.name || ''} — tower rail`}</div>
           {bError && <Empty text="Failed to load building. Check the backend and retry." />}
           {bLoading && <Skeleton className="h-40" />}

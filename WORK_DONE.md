@@ -130,8 +130,37 @@ current rule handlers as fallback, keeping safe-tool (no-raw-SQL) and "requires 
 
 ## 10. Known limits / next steps (remaining)
 
-`data/` empty; mobile 3D is desktop-first; basemap needs internet (Carto); `/api/seed` +
+Mobile 3D is desktop-first; basemap needs internet (Carto); `/api/seed` +
 `/api/validation/run` are open demo endpoints (guard before any shared deployment).
+
+## 14. Iteration 5 — Property Data Submission intake (2026-09-09)
+
+Intake layer feeding the existing cadastre — no second map/viewer/ULPIN/validator.
+Backend: 6 new tables (submissions, documents, reviews, field_verifications, versions,
+notifications); first JWT role guard (new routes only); `citizen` demo login; 14 intake
+endpoints incl. duplicates check, multipart upload to `backend/uploads/`, field-result,
+notifications, submission dashboard stats; citizen PENDING_VERIFICATION vs govt
+AUTHORIZED→INTEGRATED/NEEDS_REVIEW; single `apply_submission()` writes live records,
+appends evidence sources, recomputes confidence, history, audit, notifications.
+Frontend: Submit Data nav (role-filtered), landing, 7-step conditional wizard with
+embedded map picker, live m² conversion, ownership-claim banner, review diff +
+duplicate cards, drafts, success screen; My Submissions + tracker timeline; officer
+Verification Queue + side-by-side compare workspace with 2D/3D deep links, decision bar,
+correction fields, field-verification checklist flow; header notification bell; dashboard
+intake widgets; copilot answers submission-status questions.
+Verification: **pytest 14/14 · tsc clean · vitest 14/14 · vite build ok**.
+
+## 13. Iteration 4 — Demo-win pack (2026-09-05)
+
+**Guided tour:** header **Present** button runs an 8-step spotlight tour (KPIs → map search →
+tower → explode F08 → isolate floor → copilot auto-ask with map highlights → validation →
+B03 case finale), driving the real UI via deep links, with progress dots, auto-play (9 s/step)
+and Esc to exit (`DemoTour.tsx`, `tourSteps.ts`, `data-tour` anchors).
+**B03 case file:** `GET /api/validation/case/{entity}` (issues + snapshot + history + audit) and
+`/validation/case/:entity` page — registered-vs-LiDAR bars, evidence chain, resolve actions with
+the audit trail growing live underneath; linked from every issue card.
+**KPI honesty toggle:** City scale / Live demo switch (persisted) so display numbers survive scrutiny.
+Verification: **pytest 11/11 · tsc clean · vitest 7/7 · vite build ok**.
 
 ## 12. Iteration 3 — City 3D removed + dark command-center redesign (2026-09-04)
 

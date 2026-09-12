@@ -1,0 +1,1561 @@
+# BhuSphere 3D Architecture Diagram
+# Generated for Eraser.io - 3D Cadastral Intelligence Platform
+
+## System Overview
+```mermaid
+graph TB
+    subgraph "User Layer"
+        Users[Users<br/>Citizen, Officer, Surveyor, Admin, Public]
+        Browser[Web Browser<br/>React Frontend]
+    end
+    
+    subgraph "Frontend Layer"
+        ReactApp[React Application<br/>Vite + TypeScript + Tailwind]
+        Components[Components<br/>Map2D, Building3D, Copilot, Layout]
+        Pages[Pages<br/>Dashboard, Map, Viewer3D, Property, Validation, Submit, Queue]
+        State[State Management<br/>Zustand Store]
+        API[API Client<br/>TanStack Query]
+    end
+    
+    subgraph "Backend Layer"
+        FastAPI[FastAPI Server<br/>Python]
+        Auth[Authentication<br/>JWT]
+        Services[Services<br/>ULPIN Engine, Validation, AI Copilot, Audit]
+        Endpoints[API Endpoints<br/>RESTful API]
+    end
+    
+    subgraph "Data Layer"
+        Database[(Database<br/>SQLite Demo / PostGIS Prod)]
+        Models[Data Models<br/>Parcel, Building, Floor, Unit, Owner, Utility]
+        Spatial[Spatial Data<br/>GeoJSON Geometry]
+    end
+    
+    subgraph "External Services"
+        ML[ML Services<br/>Future: PyTorch/Open3D]
+        Cesium[Cesium Ion<br/>3D Tiles - Production]
+        Keycloak[Keycloak<br/>Auth - Production]
+    end
+    
+    Users --> Browser
+    Browser --> ReactApp
+    ReactApp --> Components
+    Components --> Pages
+    Pages --> State
+    Pages --> API
+    API --> FastAPI
+    FastAPI --> Auth
+    FastAPI --> Services
+    Services --> Endpoints
+    Endpoints --> Database
+    Database --> Models
+    Models --> Spatial
+    FastAPI -.-> ML
+    ReactApp -.-> Cesium
+    Auth -.-> Keycloak
+```
+
+## Frontend Architecture
+```mermaid
+graph TB
+    subgraph "React Frontend"
+        App[App.tsx<br/>Main Application]
+        Router[React Router<br/>Navigation]
+        QueryClient[TanStack Query<br/>Data Fetching]
+        Store[Zustand Store<br/>Global State]
+    end
+    
+    subgraph "Components"
+        Layout[Layout Component<br/>Navigation & Shell]
+        Map2D[Map2D Component<br/>2D Map with MapLibre]
+        Building3D[Building3D Component<br/>3D Building Visualization]
+        Copilot[Copilot Component<br/>AI Assistant]
+        DemoTour[DemoTour Component<br/>Guided Tour]
+        Feedback[Feedback Components<br/>Error Handling]
+    end
+    
+    subgraph "Pages"
+        Dashboard[Dashboard<br/>KPIs & Statistics]
+        MapPage[Map Page<br/>Interactive Map]
+        Viewer3D[3D Viewer<br/>3D Visualization]
+        Property[Property Page<br/>Property Details]
+        Validation[Validation Page<br/>Issue Management]
+        Submit[Submit Pages<br/>Data Submission]
+        Queue[Queue Pages<br/>Verification Queue]
+        Track[Track Page<br/>Submission Tracking]
+    end
+    
+    subgraph "Libraries"
+        APIClient[API Client<br/>HTTP Requests]
+        NavLib[Navigation Library<br/>Routing Helpers]
+        SubmitLib[Submit Library<br/>Form Logic]
+        TourSteps[Tour Steps<br/>Demo Script]
+    end
+    
+    App --> Router
+    App --> QueryClient
+    App --> Store
+    Router --> Dashboard
+    Router --> MapPage
+    Router --> Viewer3D
+    Router --> Property
+    Router --> Validation
+    Router --> Submit
+    Router --> Queue
+    Router --> Track
+    Dashboard --> Layout
+    MapPage --> Layout
+    Viewer3D --> Layout
+    Property --> Layout
+    Validation --> Layout
+    Submit --> Layout
+    Queue --> Layout
+    Track --> Layout
+    Layout --> Map2D
+    Layout --> Building3D
+    Layout --> Copilot
+    Layout --> DemoTour
+    MapPage --> Map2D
+    Viewer3D --> Building3D
+    Property --> APIClient
+    Submit --> SubmitLib
+    Submit --> APIClient
+    Dashboard --> TourSteps
+```
+
+## Backend Architecture
+```mermaid
+graph TB
+    subgraph "FastAPI Backend"
+        Main[main.py<br/>Application Entry]
+        Database[database.py<br/>DB Connection]
+        Models[models.py<br/>Data Models]
+    end
+    
+    subgraph "Core Services"
+        ULPIN[ulpin.py<br/>ULPIN Generation]
+        Validation[validation.py<br/>Validation Engine]
+        AICopilot[aicopilot.py<br/>AI Query Handler]
+        Submissions[submissions.py<br/>Submission Processing]
+    end
+    
+    subgraph "Supporting Services"
+        Seed[seed.py<br/>Database Seeding]
+        Auth[Authentication<br/>JWT Middleware]
+        Audit[Audit Logging<br/>Change Tracking]
+    end
+    
+    subgraph "API Endpoints"
+        AuthEndpoints[Auth<br/>/api/auth/login]
+        ParcelEndpoints[Parcels<br/>/api/parcels]
+        BuildingEndpoints[Buildings<br/>/api/buildings]
+        FloorEndpoints[Floors<br/>/api/floors]
+        UnitEndpoints[Units<br/>/api/units]
+        PropertyEndpoints[Properties<br/>/api/properties]
+        UtilityEndpoints[Utilities<br/>/api/utilities]
+        ValidationEndpoints[Validation<br/>/api/validation]
+        ULPINEndpoints[ULPIN<br/>/api/ulpin]
+        SearchEndpoints[Search<br/>/api/search]
+        AIEndpoints[AI<br/>/api/ai]
+        SubmissionEndpoints[Submissions<br/>/api/submissions]
+        DataEndpoints[Data<br/>/api/data]
+    end
+    
+    Main --> Database
+    Main --> Models
+    Main --> ULPIN
+    Main --> Validation
+    Main --> AICopilot
+    Main --> Submissions
+    Main --> Seed
+    Main --> Auth
+    Main --> Audit
+    Main --> AuthEndpoints
+    Main --> ParcelEndpoints
+    Main --> BuildingEndpoints
+    Main --> FloorEndpoints
+    Main --> UnitEndpoints
+    Main --> PropertyEndpoints
+    Main --> UtilityEndpoints
+    Main --> ValidationEndpoints
+    Main --> ULPINEndpoints
+    Main --> SearchEndpoints
+    Main --> AIEndpoints
+    Main --> SubmissionEndpoints
+    Main --> DataEndpoints
+```
+
+## Database Schema
+```mermaid
+erDiagram
+    Parcel ||--o{ Building : "contains"
+    Building ||--o{ Floor : "has"
+    Floor ||--o{ Unit : "contains"
+    Unit }o--|| Owner : "owned by"
+    Unit ||--o{ Right : "has rights"
+    Parcel ||--o{ Utility : "affected by"
+    Parcel ||--o{ PropertySource : "sourced from"
+    DataSource ||--o{ PropertySource : "links to"
+    Unit ||--o{ ValidationIssue : "has issues"
+    Building ||--o{ ValidationIssue : "has issues"
+    Floor ||--o{ ValidationIssue : "has issues"
+    Parcel ||--o{ ValidationIssue : "has issues"
+    Utility ||--o{ ValidationIssue : "has issues"
+    Unit ||--o{ PropertyHistory : "has history"
+    Building ||--o{ PropertyHistory : "has history"
+    Floor ||--o{ PropertyHistory : "has history"
+    Parcel ||--o{ PropertyHistory : "has history"
+    Unit ||--o{ AuditLog : "audited"
+    Building ||--o{ AuditLog : "audited"
+    Floor ||--o{ AuditLog : "audited"
+    Parcel ||--o{ AuditLog : "audited"
+    Submission ||--o{ SubmissionDocument : "has documents"
+    Submission ||--o{ SubmissionReview : "has reviews"
+    Submission ||--o{ FieldVerification : "has field checks"
+    Submission ||--o{ SubmissionVersion : "has versions"
+    Submission ||--o{ SubmissionNotification : "has notifications"
+    
+    Parcel {
+        string id PK
+        string parcel_id UK
+        string prototype_ulpin UK
+        string survey_number
+        string locality
+        string city
+        string land_use
+        float area_sqft
+        json geometry
+        json center
+        string verification_status
+        float confidence
+        datetime created_at
+        datetime updated_at
+    }
+    
+    Building {
+        string id PK
+        string building_id
+        string parcel_id FK
+        string name
+        json geometry
+        json center
+        float height_m
+        float registered_height_m
+        float lidar_height_m
+        int num_floors
+        string building_type
+        int construction_year
+        string verification_status
+        float confidence
+    }
+    
+    Floor {
+        string id PK
+        string floor_id UK
+        string building_key FK
+        int floor_number
+        string floor_label
+        float z_min
+        float z_max
+        json geometry
+        string usage
+        string verification_status
+        float confidence
+    }
+    
+    Unit {
+        string id PK
+        string unit_id UK
+        string prototype_ulpin UK
+        string floor_key FK
+        string unit_number
+        json geometry
+        float area_sqft
+        string unit_type
+        string owner_id FK
+        string verification_status
+        float confidence
+    }
+    
+    Owner {
+        string id PK
+        string owner_reference UK
+        string display_name
+        string ownership_type
+        string verification_status
+    }
+    
+    Right {
+        string id PK
+        string spatial_unit_id
+        string owner_id FK
+        string right_type
+        string status
+        string valid_from
+        string valid_to
+    }
+    
+    Utility {
+        string id PK
+        string utility_id UK
+        string utility_type
+        json geometry
+        float depth_m
+        string owner_agency
+        int installation_year
+        string status
+        float confidence
+        json affected_parcels
+    }
+    
+    DataSource {
+        string id PK
+        string source_type
+        string name
+        string capture_date
+        string resolution
+        string provider
+        string quality
+    }
+    
+    ValidationIssue {
+        string id PK
+        string entity_type
+        string entity_id
+        string issue_type
+        string severity
+        text description
+        json evidence
+        float ai_confidence
+        text suggested_action
+        string status
+    }
+    
+    PropertyHistory {
+        string id PK
+        string entity_id
+        string event_type
+        text description
+        string timestamp
+        string source_id
+    }
+    
+    AuditLog {
+        string id PK
+        string user_id
+        string user_role
+        string entity_type
+        string entity_id
+        string action
+        text old_value
+        text new_value
+        datetime timestamp
+    }
+    
+    Submission {
+        string id PK
+        string submission_id UK
+        string submitter
+        string submitter_role
+        string source_type
+        string department
+        string kind
+        string property_type
+        json payload
+        json measurements
+        string target_parcel
+        string target_building
+        string target_floor
+        string target_unit
+        string status
+        string trust
+        string priority
+        string assignee
+        int version
+        datetime created_at
+        datetime updated_at
+    }
+    
+    SubmissionDocument {
+        string id PK
+        string submission_id FK
+        string doc_type
+        string doc_number
+        string doc_date
+        string authority
+        text description
+        string filename
+        string mime
+        int size
+        datetime uploaded_at
+    }
+    
+    SubmissionReview {
+        string id PK
+        string submission_id FK
+        string reviewer
+        string reviewer_role
+        string action
+        text reason
+        json fields
+        datetime created_at
+    }
+    
+    FieldVerification {
+        string id PK
+        string verification_id UK
+        string submission_id FK
+        string assignee
+        text reason
+        string scheduled
+        json checklist
+        json observed
+        string recommendation
+        string status
+        datetime created_at
+    }
+    
+    SubmissionVersion {
+        string id PK
+        string submission_id FK
+        int version
+        json payload
+        json measurements
+        text note
+        datetime created_at
+    }
+    
+    SubmissionNotification {
+        string id PK
+        string username
+        string title
+        text body
+        string link
+        string read
+        datetime created_at
+    }
+```
+
+## Data Flow: Property Submission
+```mermaid
+sequenceDiagram
+    participant Citizen as Citizen User
+    participant Frontend as React Frontend
+    participant API as FastAPI Backend
+    participant DB as Database
+    participant Officer as Verification Officer
+    participant System as System Services
+    
+    Citizen->>Frontend: Access Submit Page
+    Frontend->>Citizen: Display Submission Wizard
+    Citizen->>Frontend: Enter Property Data
+    Frontend->>Frontend: Validate Form Data
+    Frontend->>Frontend: Convert Measurements (m²)
+    Citizen->>Frontend: Upload Documents
+    Frontend->>API: POST /api/submissions (Draft)
+    API->>DB: Create Submission Record
+    DB-->>API: Submission ID
+    API-->>Frontend: SUB-2026-XXXXXX
+    Frontend-->>Citizen: Show Submission ID
+    
+    Citizen->>Frontend: Submit for Review
+    Frontend->>API: PUT /api/submissions/{id}/submit
+    API->>DB: Update Status to SUBMITTED
+    API->>System: Check for Duplicates
+    System-->>API: Duplicate Check Results
+    API->>DB: Update Status to PENDING_VERIFICATION
+    API-->>Frontend: Confirmation
+    Frontend-->>Citizen: Submission Submitted
+    
+    Officer->>Frontend: Access Verification Queue
+    Frontend->>API: GET /api/submissions/queue
+    API->>DB: Query Pending Submissions
+    DB-->>API: Submission List
+    API-->>Frontend: Queue Data
+    Frontend-->>Officer: Display Queue
+    
+    Officer->>Frontend: Select Submission
+    Frontend->>API: GET /api/submissions/{id}
+    API->>DB: Get Submission Details
+    DB-->>API: Full Submission Data
+    API-->>Frontend: Submission Details
+    Frontend-->>Officer: Show Submission Details
+    
+    Officer->>Frontend: Compare with Live Data
+    Frontend->>API: GET /api/properties/{ulpin}
+    API->>DB: Query Property Data
+    DB-->>API: Property Details
+    API-->>Frontend: Property Data
+    Frontend-->>Officer: Show Comparison
+    
+    alt Field Check Required
+        Officer->>Frontend: Request Field Verification
+        Frontend->>API: POST /api/submissions/{id}/field-verification
+        API->>DB: Create Field Verification
+        API-->>Frontend: Verification ID
+        Officer->>Frontend: Conduct Field Check
+        Officer->>Frontend: Submit Field Results
+        Frontend->>API: POST /api/field-verification/{id}/result
+        API->>DB: Update Field Verification
+    end
+    
+    Officer->>Frontend: Approve/Reject
+    Frontend->>API: PUT /api/submissions/{id}/review
+    API->>DB: Update Submission Status
+    API->>DB: Create Audit Log
+    API->>System: Trigger Integration
+    
+    alt Approved
+        System->>DB: Update Property Records
+        System->>DB: Create Property History
+        System->>DB: Update Validation Status
+        System->>DB: Create Notification
+    end
+    
+    API-->>Frontend: Review Complete
+    Frontend-->>Officer: Confirmation
+    
+    Citizen->>Frontend: Track Submission
+    Frontend->>API: GET /api/submissions/track/{id}
+    API->>DB: Get Submission Status
+    DB-->>API: Current Status
+    API-->>Frontend: Status Update
+    Frontend-->>Citizen: Show Status
+```
+
+## Data Flow: Property Validation
+```mermaid
+sequenceDiagram
+    participant Admin as Admin User
+    participant API as FastAPI Backend
+    participant Validation as Validation Engine
+    participant DB as Database
+    participant AI as AI Copilot
+    
+    Admin->>API: POST /api/validation/run
+    API->>Validation: Trigger Validation
+    Validation->>DB: Query All Properties
+    DB-->>Validation: Property Data
+    
+    loop For Each Property
+        Validation->>Validation: Check Height Mismatch
+        Validation->>Validation: Check Spatial Conflicts
+        Validation->>Validation: Check Ownership Issues
+        Validation->>Validation: Check Geometry Validity
+        
+        alt Issue Found
+            Validation->>AI: Request AI Analysis
+            AI->>AI: Analyze Issue
+            AI-->>Validation: Confidence & Suggestions
+            Validation->>DB: Create Validation Issue
+        end
+    end
+    
+    Validation-->>API: Total Issues Found
+    API->>DB: Create Audit Log
+    API-->>Admin: Validation Report
+    
+    Admin->>API: GET /api/validation/issues
+    API->>DB: Query Open Issues
+    DB-->>API: Issues List
+    API-->>Admin: Issues Dashboard
+    
+    Admin->>API: GET /api/validation/case/{entity}
+    API->>DB: Get Case File
+    DB-->>API: Full Case Data
+    API-->>Admin: Case Details
+    
+    Admin->>API: POST /api/validation/{id}/review
+    API->>DB: Update Issue Status
+    API->>DB: Create Audit Log
+    API-->>Admin: Review Complete
+```
+
+## User Roles & Access Control
+```mermaid
+graph TB
+    subgraph "User Roles"
+        Public[Public<br/>Read-only Access]
+        Citizen[Citizen<br/>Submit Data, Track]
+        Officer[Officer<br/>Verify, Approve, Field Check]
+        Surveyor[Surveyor<br/>Submit Data, Verify]
+        Admin[Admin<br/>Full Access, System Config]
+    end
+    
+    subgraph "Access Permissions"
+        Dashboard[Dashboard<br/>View KPIs]
+        Map[Map<br/>View Properties]
+        Viewer3D[3D Viewer<br/>View 3D Models]
+        Property[Property<br/>View Details]
+        Validation[Validation<br/>View Issues]
+        Submit[Submit<br/>Create Submissions]
+        Queue[Queue<br/>Verify Submissions]
+        AdminPanel[Admin<br/>System Management]
+    end
+    
+    Public --> Dashboard
+    Public --> Map
+    Public --> Viewer3D
+    Public --> Property
+    
+    Citizen --> Dashboard
+    Citizen --> Map
+    Citizen --> Viewer3D
+    Citizen --> Property
+    Citizen --> Submit
+    Citizen --> Validation
+    
+    Officer --> Dashboard
+    Officer --> Map
+    Officer --> Viewer3D
+    Officer --> Property
+    Officer --> Validation
+    Officer --> Submit
+    Officer --> Queue
+    
+    Surveyor --> Dashboard
+    Surveyor --> Map
+    Surveyor --> Viewer3D
+    Surveyor --> Property
+    Surveyor --> Validation
+    Surveyor --> Submit
+    Surveyor --> Queue
+    
+    Admin --> Dashboard
+    Admin --> Map
+    Admin --> Viewer3D
+    Admin --> Property
+    Admin --> Validation
+    Admin --> Submit
+    Admin --> Queue
+    Admin --> AdminPanel
+```
+
+## Deployment Architecture
+```mermaid
+graph TB
+    subgraph "Production Environment"
+        subgraph "Web Server"
+            Nginx[Nginx<br/>Reverse Proxy]
+            SSL[SSL/TLS<br/>HTTPS]
+        end
+        
+        subgraph "Application Servers"
+            FrontendServer[Frontend Server<br/>React Build]
+            BackendServer[Backend Server<br/>FastAPI + Gunicorn]
+        end
+        
+        subgraph "Database Layer"
+            PostGIS[(PostgreSQL + PostGIS<br/>Spatial Database)]
+            PgVector[pgvector<br/>Vector Search]
+            Backup[Database Backup<br/>Regular Backups]
+        end
+        
+        subgraph "External Services"
+            CesiumIon[Cesium Ion<br/>3D Tiles Hosting]
+            Keycloak[Keycloak<br/>Authentication]
+            Storage[Object Storage<br/>File Uploads]
+        end
+        
+        subgraph "Monitoring & Logging"
+            Monitoring[Monitoring<br/>Prometheus + Grafana]
+            Logging[Logging<br/>ELK Stack]
+            Audit[Audit Trail<br/>Secure Storage]
+        end
+    end
+    
+    User[Users] --> SSL
+    SSL --> Nginx
+    Nginx --> FrontendServer
+    Nginx --> BackendServer
+    FrontendServer --> CesiumIon
+    BackendServer --> PostGIS
+    BackendServer --> PgVector
+    BackendServer --> Keycloak
+    BackendServer --> Storage
+    PostGIS --> Backup
+    BackendServer --> Monitoring
+    BackendServer --> Logging
+    BackendServer --> Audit
+```
+
+## Technology Stack
+```mermaid
+graph TB
+    subgraph "Frontend Stack"
+        React[React 18<br/>UI Framework]
+        TypeScript[TypeScript<br/>Type Safety]
+        Vite[Vite<br/>Build Tool]
+        Tailwind[Tailwind CSS<br/>Styling]
+        MapLibre[MapLibre GL<br/>2D Maps]
+        ThreeJS[Three.js<br/>3D Graphics]
+        ReactRouter[React Router<br/>Navigation]
+        TanStackQuery[TanStack Query<br/>Data Fetching]
+        Zustand[Zustand<br/>State Management]
+    end
+    
+    subgraph "Backend Stack"
+        FastAPI[FastAPI<br/>Web Framework]
+        SQLAlchemy[SQLAlchemy<br/>ORM]
+        Pydantic[Pydantic<br/>Validation]
+        JWT[JWT<br/>Authentication]
+        CORS[CORS<br/>Cross-Origin]
+    end
+    
+    subgraph "Database Stack"
+        SQLite[SQLite<br/>Demo Database]
+        PostGIS[PostGIS<br/>Production Spatial DB]
+        GeoAlchemy[GeoAlchemy2<br/>Spatial Extensions]
+    end
+    
+    subgraph "DevOps Stack"
+        Docker[Docker<br/>Containerization]
+        DockerCompose[Docker Compose<br/>Local Development]
+        Git[Git<br/>Version Control]
+        pytest[pytest<br/>Testing]
+        Vitest[Vitest<br/>Frontend Testing]
+    end
+    
+    subgraph "Future/Production Stack"
+        Cesium[Cesium Ion<br/>3D Tiles]
+        Keycloak[Keycloak<br/>SSO]
+        PyTorch[PyTorch<br/>ML Services]
+        Open3D[Open3D<br/>3D Processing]
+        LangGraph[LangGraph<br/>RAG/LLM]
+        CityGML[CityGML<br/>3D City Model]
+        LADM[LADM<br/>Land Administration]
+    end
+```
+
+## API Endpoint Structure
+```mermaid
+graph TB
+    API[API Base<br/>http://localhost:8000/api]
+    
+    subgraph "Authentication"
+        Auth[POST /auth/login<br/>JWT Token]
+    end
+    
+    subgraph "Property Data"
+        Parcels[GET /parcels<br/>List Parcels]
+        ParcelDetail[GET /parcels/{id}<br/>Parcel Detail]
+        Buildings[GET /buildings<br/>List Buildings]
+        BuildingDetail[GET /buildings/{p}/{b}<br/>Building Detail]
+        Floors[GET /floors/{id}<br/>Floor Detail]
+        Units[GET /units/{ulpin}<br/>Unit Detail]
+        Properties[GET /properties/{ulpin}<br/>Property Detail]
+        PropertySources[GET /properties/{ulpin}/sources<br/>Data Sources]
+        PropertyHistory[GET /properties/{ulpin}/history<br/>Property History]
+        PropertyValidation[GET /properties/{ulpin}/validation<br/>Validation Issues]
+    end
+    
+    subgraph "Utilities"
+        Utilities[GET /utilities<br/>List Utilities]
+    end
+    
+    subgraph "Validation"
+        ValidationIssues[GET /validation/issues<br/>List Issues]
+        ValidationRun[POST /validation/run<br/>Run Validation]
+        ValidationReview[POST /validation/{id}/review<br/>Review Issue]
+        ValidationCase[GET /validation/case/{entity}<br/>Case File]
+    end
+    
+    subgraph "ULPIN"
+        ULPINGenerate[POST /ulpin/generate<br/>Generate ULPIN]
+    end
+    
+    subgraph "Search"
+        Search[GET/POST /search<br/>Search Properties]
+    end
+    
+    subgraph "AI"
+        AIQuery[POST /ai/query<br/>AI Query]
+    end
+    
+    subgraph "Submissions"
+        Submissions[GET/POST /submissions<br/>List/Create]
+        MySubmissions[GET /submissions/my<br/>My Submissions]
+        SubmissionDetail[GET /submissions/{id}<br/>Submission Detail]
+        SubmitAction[PUT /submissions/{id}/submit<br/>Submit]
+        ReviewAction[PUT /submissions/{id}/review<br/>Review]
+        ResubmitAction[PUT /submissions/{id}/resubmit<br/>Resubmit]
+        FieldVerification[POST /submissions/{id}/field-verification<br/>Field Check]
+        FieldResult[POST /field-verification/{id}/result<br/>Field Results]
+        Documents[POST /submissions/{id}/documents<br/>Upload Docs]
+        SubHistory[GET /submissions/{id}/history<br/>Submission History]
+        CheckDuplicates[POST /submissions/check-duplicates<br/>Duplicate Check]
+    end
+    
+    subgraph "Data Management"
+        DataImport[POST /data/import<br/>Import Data]
+        DataCommit[POST /data/commit<br/>Commit Data]
+        Uploads[GET /uploads/{file}<br/>Get Uploaded File]
+    end
+    
+    subgraph "Admin"
+        Seed[POST /seed<br/>Seed Database]
+        DashboardStats[GET /dashboard/stats<br/>Dashboard Stats]
+        DashboardSubmissions[GET /dashboard/submissions<br/>Submission Stats]
+        Audit[GET /audit<br/>Audit Log]
+        Notifications[GET /notifications<br/>User Notifications]
+    end
+    
+    API --> Auth
+    API --> Parcels
+    API --> Buildings
+    API --> Floors
+    API --> Units
+    API --> Properties
+    API --> Utilities
+    API --> Validation
+    API --> ULPIN
+    API --> Search
+    API --> AI
+    API --> Submissions
+    API --> Data
+    API --> Admin
+```
+
+## Key Features Flow
+```mermaid
+graph TB
+    subgraph "3D Visualization Flow"
+        User[User Selects Property]
+        Map[2D Map View]
+        Building3D[3D Building View]
+        FloorSelection[Floor Selection]
+        UnitSelection[Unit Selection]
+        PropertyDetail[Property Details]
+        Underground[Underground Utilities]
+    end
+    
+    subgraph "AI Copilot Flow"
+        Question[User Question]
+        NLP[NLP Processing]
+        Query[Database Query]
+        Analysis[Data Analysis]
+        Response[Natural Language Response]
+        Action[Suggested Actions]
+    end
+    
+    subgraph "Validation Flow"
+        Trigger[Validation Trigger]
+        Rules[Rule Engine]
+        SpatialCheck[Spatial Analysis]
+        OwnershipCheck[Ownership Analysis]
+        IssueDetection[Issue Detection]
+        AICorroboration[AI Corroboration]
+        CaseCreation[Case File Creation]
+        Resolution[Resolution Workflow]
+    end
+    
+    subgraph "Submission Flow"
+        Wizard[Submission Wizard]
+        Validation[Form Validation]
+        Conversion[Measurement Conversion]
+        DocumentUpload[Document Upload]
+        Draft[Draft Creation]
+        Submit[Submission]
+        DuplicateCheck[Duplicate Check]
+        Queue[Verification Queue]
+        Review[Officer Review]
+        FieldCheck[Field Verification]
+        Approval[Approval/Rejection]
+        Integration[System Integration]
+        Notification[User Notification]
+    end
+    
+    User --> Map
+    Map --> Building3D
+    Building3D --> FloorSelection
+    FloorSelection --> UnitSelection
+    UnitSelection --> PropertyDetail
+    PropertyDetail --> Underground
+    
+    Question --> NLP
+    NLP --> Query
+    Query --> Analysis
+    Analysis --> Response
+    Response --> Action
+    
+    Trigger --> Rules
+    Rules --> SpatialCheck
+    Rules --> OwnershipCheck
+    SpatialCheck --> IssueDetection
+    OwnershipCheck --> IssueDetection
+    IssueDetection --> AICorroboration
+    AICorroboration --> CaseCreation
+    CaseCreation --> Resolution
+    
+    Wizard --> Validation
+    Validation --> Conversion
+    Conversion --> DocumentUpload
+    DocumentUpload --> Draft
+    Draft --> Submit
+    Submit --> DuplicateCheck
+    DuplicateCheck --> Queue
+    Queue --> Review
+    Review --> FieldCheck
+    FieldCheck --> Approval
+    Approval --> Integration
+    Integration --> Notification
+```
+
+## Integration Points
+```mermaid
+graph TB
+    subgraph "Current Integrations"
+        InternalDB[Internal Database<br/>SQLite/PostGIS]
+        InternalAuth[Internal Auth<br/>JWT Mock]
+        InternalAPI[Internal API<br/>FastAPI]
+    end
+    
+    subgraph "Future Integrations"
+        BhuNaksha[Bhu-Naksha<br/>Land Records System]
+        Registration[Registration System<br/>Property Registration]
+        CORS[CORS<br/>Survey of India]
+        GovAuth[Government SSO<br/>Keycloak]
+        Payment[Payment Gateway<br/>Fee Processing]
+        SMS[SMS Gateway<br/>Notifications]
+        Email[Email Service<br/>Notifications]
+        MLService[ML Services<br/>PyTorch/Open3D]
+        ThreeDService[3D Tile Service<br/>Cesium Ion]
+        RAGService[RAG Service<br/>LangGraph]
+        AuditService[Merkle Audit<br/>Blockchain]
+    end
+    
+    InternalAPI --> InternalDB
+    InternalAPI --> InternalAuth
+    
+    InternalAPI -.-> BhuNaksha
+    InternalAPI -.-> Registration
+    InternalAPI -.-> CORS
+    InternalAuth -.-> GovAuth
+    InternalAPI -.-> Payment
+    InternalAPI -.-> SMS
+    InternalAPI -.-> Email
+    InternalAPI -.-> MLService
+    InternalAPI -.-> ThreeDService
+    InternalAPI -.-> RAGService
+    InternalAPI -.-> AuditService
+```
+
+## Security Architecture
+```mermaid
+graph TB
+    subgraph "Security Layers"
+        Network[Network Security<br/>HTTPS/TLS, Firewall]
+        Auth[Authentication<br/>JWT, Role-based]
+        AuthZ[Authorization<br/>Role-based Access Control]
+        Input[Input Validation<br/>Pydantic Models]
+        Output[Output Sanitization<br/>XSS Prevention]
+        Audit[Audit Logging<br/>All Actions]
+        Data[Data Protection<br/>Encryption at Rest]
+        API[API Security<br/>Rate Limiting, CORS]
+    end
+    
+    subgraph "User Roles Security"
+        PublicSecurity[Public<br/>Read-only, No Auth]
+        CitizenSecurity[Citizen<br/>Own Data Only]
+        OfficerSecurity[Officer<br/>Assigned Area]
+        SurveyorSecurity[Surveyor<br/>Survey Data]
+        AdminSecurity[Admin<br/>Full Access]
+    end
+    
+    subgraph "Data Security"
+        PersonalData[Personal Data<br/>Owner Names, Contacts]
+        PropertyData[Property Data<br/>Locations, Dimensions]
+        GovernmentData[Governent Data<br/>Official Records]
+        AuditData[Audit Data<br/>Immutable Logs]
+    end
+    
+    Network --> Auth
+    Auth --> AuthZ
+    AuthZ --> Input
+    Input --> Output
+    Output --> Audit
+    Audit --> Data
+    Data --> API
+    
+    PublicSecurity --> AuthZ
+    CitizenSecurity --> AuthZ
+    OfficerSecurity --> AuthZ
+    SurveyorSecurity --> AuthZ
+    AdminSecurity --> AuthZ
+    
+    PersonalData --> Data
+    PropertyData --> Data
+    GovernmentData --> Data
+    AuditData --> Data
+```
+
+## Performance & Scalability
+```mermaid
+graph TB
+    subgraph "Performance Optimization"
+        Caching[Query Caching<br/>TanStack Query]
+        Indexing[Database Indexing<br/>ULPIN, Parcel ID]
+        Pagination[Result Pagination<br/>Limit/Offset]
+        LazyLoading[Lazy Loading<br/>3D Models]
+        Compression[Data Compression<br/>GeoJSON]
+        CDN[CDN<br/>Static Assets]
+    end
+    
+    subgraph "Scalability Strategy"
+        Horizontal[Horizontal Scaling<br/>Multiple Backend Instances]
+        Vertical[Vertical Scaling<br/>Resource Upgrades]
+        Database[Database Scaling<br/>Read Replicas]
+        CachingLayer[Caching Layer<br/>Redis]
+        LoadBalancing[Load Balancing<br/>Nginx]
+        Microservices[Microservices<br/>Future Migration]
+    end
+    
+    subgraph "Monitoring"
+        Performance[Performance Monitoring<br/>Response Times]
+        Error[Error Tracking<br/>Exception Logging]
+        Usage[Usage Analytics<br/>User Behavior]
+        Capacity[Capacity Planning<br/>Resource Usage]
+    end
+    
+    Caching --> Performance
+    Indexing --> Performance
+    Pagination --> Performance
+    LazyLoading --> Performance
+    Compression --> Performance
+    CDN --> Performance
+    
+    Horizontal --> Scalability
+    Vertical --> Scalability
+    Database --> Scalability
+    CachingLayer --> Scalability
+    LoadBalancing --> Scalability
+    Microservices --> Scalability
+    
+    Performance --> Monitoring
+    Error --> Monitoring
+    Usage --> Monitoring
+    Capacity --> Monitoring
+```
+
+## Development Workflow
+```mermaid
+graph TB
+    subgraph "Development"
+        LocalDev[Local Development<br/>Windows Scripts]
+        BackendDev[Backend Dev<br/>FastAPI + SQLite]
+        FrontendDev[Frontend Dev<br/>React + Vite]
+        Testing[Testing<br/>pytest + vitest]
+        GitOps[Git Operations<br/>Version Control]
+    end
+    
+    subgraph "CI/CD"
+        Build[Build Process<br/>Docker Build]
+        Test[Automated Tests<br/>Test Suite]
+        Deploy[Deployment<br/>Docker Compose]
+        Monitor[Monitoring<br/>Health Checks]
+    end
+    
+    subgraph "Documentation"
+        APIDocs[API Documentation<br/>Swagger/OpenAPI]
+        UserDocs[User Documentation<br/>README]
+        ArchitectureDocs[Architecture Docs<br/>This File]
+        FutureDocs[Future Roadmap<br/>FUTURE.md]
+    end
+    
+    LocalDev --> BackendDev
+    LocalDev --> FrontendDev
+    BackendDev --> Testing
+    FrontendDev --> Testing
+    Testing --> GitOps
+    
+    GitOps --> Build
+    Build --> Test
+    Test --> Deploy
+    Deploy --> Monitor
+    
+    BackendDev --> APIDocs
+    FrontendDev --> UserDocs
+    LocalDev --> ArchitectureDocs
+    GitOps --> FutureDocs
+```
+
+## Summary
+This architecture diagram illustrates the BhuSphere 3D platform, a comprehensive 3D cadastral intelligence system for property management and vertical property mapping. The system features:
+
+**Core Components:**
+- React TypeScript frontend with 3D visualization capabilities
+- FastAPI backend with RESTful API
+- Spatial database (SQLite for demo, PostGIS for production)
+- AI copilot for intelligent queries
+- Validation engine for data quality
+
+**Key Features:**
+- 3D property visualization with floor/unit exploration
+- Property submission and verification workflow
+- AI-powered analysis and suggestions
+- Comprehensive audit logging
+- Role-based access control
+- Underground utility mapping
+
+**Data Models:**
+- Hierarchical property structure (Parcel → Building → Floor → Unit)
+- Ownership and rights management
+- Utility infrastructure tracking
+- Validation and history tracking
+- Submission workflow management
+
+**Integration Points:**
+- Government land record systems (future)
+- Survey of India CORS (future)
+- Payment gateways (future)
+- 3D tile services (future)
+
+The architecture is designed for scalability, security, and interoperability with existing government systems while maintaining a clean separation of concerns between frontend, backend, and data layers.
+
+---
+
+# Eraser.io AI Prompts for Flow Chart Generation
+
+## Prompt 1: Complete System Architecture Flow
+```
+Create a comprehensive system architecture flow chart for BhuSphere 3D, a 3D cadastral intelligence platform. The system should show:
+
+1. User Interface Layer:
+   - React TypeScript frontend with Vite
+   - Components: Map2D, Building3D, Copilot, Layout
+   - Pages: Dashboard, Map, Viewer3D, Property, Validation, Submit, Queue, Track
+   - State management with Zustand
+   - API client with TanStack Query
+
+2. Backend Layer:
+   - FastAPI Python server
+   - Services: ULPIN engine, validation engine, AI copilot, audit logging
+   - RESTful API endpoints
+   - JWT authentication
+   - CORS middleware
+
+3. Data Layer:
+   - SQLite database (demo) / PostGIS (production)
+   - Data models: Parcel, Building, Floor, Unit, Owner, Utility, ValidationIssue, Submission
+   - GeoJSON spatial data storage
+   - SQLAlchemy ORM
+
+4. External Integrations (future):
+   - Cesium Ion for 3D tiles
+   - Keycloak for authentication
+   - Government land record systems
+   - Survey of India CORS
+
+Show the data flow from user interactions through the frontend to backend services and database, including the submission workflow, validation process, and 3D visualization pipeline. Include role-based access control for different user types (Public, Citizen, Officer, Surveyor, Admin).
+```
+
+## Prompt 2: Property Submission Workflow
+```
+Create a detailed flow chart for the property submission workflow in BhuSphere 3D. Show the complete process from:
+
+1. Citizen User Journey:
+   - Access submission page
+   - Complete submission wizard with property identification, address, parcel details
+   - Upload supporting documents (ownership documents, floor plans)
+   - Form validation and measurement conversion (sq ft to m²)
+   - Create draft submission
+   - Submit for review
+
+2. Backend Processing:
+   - Generate submission ID (SUB-2026-XXXXXX format)
+   - Store submission in database
+   - Run duplicate detection
+   - Update status to PENDING_VERIFICATION
+   - Create notification for verification officers
+
+3. Officer Verification Workflow:
+   - Access verification queue
+   - Review submission details
+   - Compare with existing property records
+   - Request field verification if needed
+   - Conduct field checks and upload results
+   - Approve or reject submission
+   - Create audit log
+
+4. System Integration:
+   - If approved: Update property records, create history entry, update validation status
+   - If rejected: Request corrections from citizen
+   - Send notifications to all stakeholders
+   - Update submission status to INTEGRATED or NEEDS_REVIEW
+
+Include decision points, parallel processes, and error handling. Show the different paths for government department submissions (auto-validated) vs citizen submissions (manual verification).
+```
+
+## Prompt 3: 3D Property Visualization Flow
+```
+Create a flow chart showing the 3D property visualization pipeline in BhuSphere 3D. Include:
+
+1. Data Retrieval:
+   - User selects property on 2D map or searches by ULPIN
+   - Frontend requests property data from API
+   - Backend queries hierarchical data (Parcel → Building → Floor → Unit)
+   - Returns GeoJSON geometry, metadata, and relationships
+
+2. 2D Map View:
+   - Render parcel boundaries using MapLibre GL
+   - Display building footprints
+   - Show underground utility lines
+   - Interactive selection and hover states
+
+3. 3D Building Generation:
+   - Parse building geometry and metadata
+   - Generate procedural 3D floor volumes
+   - Apply building height (registered vs LiDAR comparison)
+   - Create exploded view for floor exploration
+   - Render underground utility tubes
+
+4. Interactive Exploration:
+   - User selects specific floor (B2 to F12)
+   - Highlight selected floor with different color
+   - Show floor details (z_min, z_max, usage, units)
+   - User selects unit within floor
+   - Display unit information (ULPIN, area, owner, confidence)
+
+5. Data Display:
+   - Property details panel with complete information
+   - Evidence tab showing data sources
+   - Validation tab showing any issues
+   - History tab showing property changes
+   - Confidence score with visual indicator
+
+Include the integration with Cesium Ion for production 3D tiles and the current procedural generation approach for the demo.
+```
+
+## Prompt 4: Validation Engine Flow
+```
+Create a flow chart for the validation engine in BhuSphere 3D. Show the automated validation process:
+
+1. Validation Trigger:
+   - Manual trigger by admin via API
+   - Scheduled automated runs
+   - Post-submission validation
+   - Data import validation
+
+2. Data Retrieval:
+   - Query all properties from database
+   - Retrieve spatial geometry data
+   - Get ownership information
+   - Fetch measurement data (registered vs LiDAR)
+
+3. Validation Rules Engine:
+   - Height mismatch detection (registered vs LiDAR > 2m threshold)
+   - Spatial conflict detection (overlapping geometries)
+   - Ownership consistency checks
+   - Geometry validity checks (self-intersection, closure)
+   - Utility intersection detection
+   - Address/ULPIN format validation
+
+4. AI Analysis:
+   - Send detected issues to AI copilot
+   - Natural language analysis of issue context
+   - Confidence scoring for each issue
+   - Suggested resolution actions
+   - Evidence gathering from multiple sources
+
+5. Issue Management:
+   - Create validation issue records
+   - Assign severity levels (Low, Medium, High)
+   - Link to affected entities
+   - Generate case files for complex issues
+   - Create audit trail
+
+6. Resolution Workflow:
+   - Officers review validation dashboard
+   - Access detailed case files
+   - Apply manual overrides if needed
+   - Resolve issues with status updates
+   - Trigger re-validation after corrections
+
+Include feedback loops where resolved issues trigger re-validation of related properties.
+```
+
+## Prompt 5: AI Copilot Query Processing
+```
+Create a flow chart showing the AI copilot query processing in BhuSphere 3D:
+
+1. User Query Input:
+   - Natural language question from user
+   - Examples: "Why is apartment A804 marked 96.4%?" or "Show buildings with height mismatch > 2m"
+   - Query received via React frontend
+
+2. NLP Processing:
+   - Parse natural language query
+   - Extract key entities (ULPIN, building IDs, locations)
+   - Identify query type (explanation, search, comparison)
+   - Determine required data sources
+
+3. Database Query Generation:
+   - Translate NLP to SQL queries
+   - Query property data based on extracted entities
+   - Fetch related validation issues
+   - Retrieve measurement comparisons
+   - Get historical data if needed
+
+4. Data Analysis:
+   - Process retrieved data
+   - Calculate statistics and comparisons
+   - Identify patterns and anomalies
+   - Generate confidence scores
+   - Format results for natural language response
+
+5. Response Generation:
+   - Construct natural language explanation
+   - Include relevant data points and evidence
+   - Provide actionable insights
+   - Suggest follow-up actions
+   - Format for display in Copilot UI
+
+6. Action Integration:
+   - If query requests map highlights: trigger map updates
+   - If query requests property details: navigate to property page
+   - If query identifies issues: link to validation case
+   - Update UI with results and suggestions
+
+Include error handling for ambiguous queries and fallback to search functionality.
+```
+
+## Prompt 6: Database Schema Relationships
+```
+Create an entity-relationship diagram flow chart for the BhuSphere 3D database schema. Show the relationships between:
+
+Core Cadastral Models:
+- Parcel (land parcel with geometry, locality, survey number)
+- Building (within parcel, with height data, floor count)
+- Floor (within building, with z-range, usage)
+- Unit (within floor, with ULPIN, area, owner)
+
+Supporting Models:
+- Owner (property owner information)
+- Right (ownership rights and interests)
+- Utility (underground infrastructure affecting parcels)
+- DataSource (GIS, LiDAR, drone, GNSS data sources)
+- PropertySource (link between properties and data sources)
+
+Validation & Audit Models:
+- ValidationIssue (detected issues with severity and AI confidence)
+- PropertyHistory (historical changes to properties)
+- AuditLog (user actions and system events)
+
+Submission Workflow Models:
+- Submission (property data submissions from citizens/government)
+- SubmissionDocument (uploaded documents)
+- SubmissionReview (officer reviews and decisions)
+- FieldVerification (field check requests and results)
+- SubmissionVersion (version history of submissions)
+- SubmissionNotification (user notifications)
+
+Show cardinality of relationships (one-to-one, one-to-many, many-to-many) and foreign key relationships. Include key fields for each model.
+```
+
+## Prompt 7: User Role Access Control Flow
+```
+Create a flow chart showing the role-based access control system in BhuSphere 3D:
+
+1. Authentication Process:
+   - User enters credentials (username/password)
+   - Frontend sends login request to /api/auth/login
+   - Backend validates against user database
+   - Generate JWT token with user role
+   - Return token to frontend
+   - Store token in frontend state
+
+2. Role Definitions:
+   - Public: No authentication required, read-only access to public data
+   - Citizen: Can submit property data, track own submissions, view public data
+   - Officer: Can verify submissions, access validation tools, conduct field checks
+   - Surveyor: Can submit survey data, verify submissions, access mapping tools
+   - Admin: Full system access, user management, system configuration
+
+3. Access Control Matrix:
+   - Dashboard: All roles can view
+   - Map/3D Viewer: All roles can view
+   - Property Details: All roles can view
+   - Submit Data: Citizen, Officer, Surveyor, Admin
+   - Verification Queue: Officer, Admin
+   - Admin Panel: Admin only
+   - Validation Tools: Officer, Surveyor, Admin
+
+4. Permission Enforcement:
+   - JWT middleware on protected routes
+   - Role-based component rendering in frontend
+   - Backend role validation on API endpoints
+   - Data filtering based on user role (citizens see own data only)
+
+5. Session Management:
+   - Token expiration handling
+   - Automatic token refresh
+   - Logout functionality
+   - Session timeout
+
+Include decision points for unauthorized access attempts and role escalation workflows.
+```
+
+## Prompt 8: Deployment Architecture Flow
+```
+Create a flow chart showing the production deployment architecture for BhuSphere 3D:
+
+1. Infrastructure Components:
+   - Load balancer (Nginx) with SSL/TLS termination
+   - Frontend server (React build static files)
+   - Backend server (FastAPI with Gunicorn workers)
+   - PostgreSQL database with PostGIS extension
+   - Redis cache for query optimization
+   - Object storage for file uploads
+
+2. Network Flow:
+   - User HTTPS requests → Load balancer
+   - Static asset requests → Frontend server
+   - API requests → Backend server
+   - Database queries → PostgreSQL
+   - Cache operations → Redis
+   - File uploads → Object storage
+
+3. Security Layers:
+   - SSL/TLS encryption
+   - Firewall rules
+   - DDoS protection
+   - API rate limiting
+   - Database connection encryption
+   - Secrets management
+
+4. External Service Integration:
+   - Cesium Ion for 3D tile hosting
+   - Keycloak for SSO authentication
+   - SMS gateway for notifications
+   - Email service for notifications
+   - Government API integrations
+
+5. Monitoring & Logging:
+   - Application performance monitoring
+   - Error tracking and alerting
+   - Audit log storage
+   - Database backup automation
+   - Health check endpoints
+
+6. Scalability Strategy:
+   - Horizontal scaling of backend instances
+   - Database read replicas
+   - CDN for static assets
+   - Auto-scaling based on load
+
+Include backup and disaster recovery processes.
+```
+
+## Prompt 9: Development and CI/CD Pipeline
+```
+Create a flow chart showing the development and CI/CD pipeline for BhuSphere 3D:
+
+1. Local Development:
+   - Windows batch scripts for easy startup
+   - Backend: Python virtual environment, FastAPI dev server
+   - Frontend: Node.js, Vite dev server with hot reload
+   - Database: SQLite for local development
+   - Code formatting and linting
+
+2. Version Control:
+   - Git workflow with feature branches
+   - Pull request process
+   - Code review requirements
+   - Commit message conventions
+
+3. CI Pipeline:
+   - Automated testing on push
+   - Backend: pytest test suite
+   - Frontend: vitest test suite
+   - Type checking (TypeScript, mypy)
+   - Code quality checks (ESLint, flake8)
+   - Security scanning
+
+4. Build Process:
+   - Frontend: Vite production build
+   - Backend: Docker image build
+   - Dependency optimization
+   - Asset minification
+   - Environment-specific configuration
+
+5. CD Pipeline:
+   - Docker image registry push
+   - Staging environment deployment
+   - Integration testing
+   - Production deployment approval
+   - Database migration execution
+   - Rolling deployment with zero downtime
+
+6. Monitoring:
+   - Deployment health checks
+   - Automated rollback on failure
+   - Performance monitoring
+   - Error tracking integration
+
+Include branch protection rules and deployment approval workflows.
+```
+
+## Prompt 10: Technology Stack Integration Flow
+```
+Create a flow chart showing how the technology stack components integrate in BhuSphere 3D:
+
+1. Frontend Stack Integration:
+   - React 18 with TypeScript for type-safe components
+   - Vite for fast development and optimized builds
+   - Tailwind CSS for utility-first styling
+   - React Router for client-side navigation
+   - TanStack Query for server state management
+   - Zustand for client state management
+   - MapLibre GL for 2D map rendering
+   - Three.js for 3D visualization
+
+2. Backend Stack Integration:
+   - FastAPI for async API endpoints
+   - SQLAlchemy ORM for database operations
+   - Pydantic for request/response validation
+   - JWT for authentication
+   - CORS for cross-origin requests
+   - Python logging for error tracking
+
+3. Database Integration:
+   - SQLite for local development
+   - PostGIS for production spatial data
+   - GeoAlchemy2 for spatial query support
+   - Database migrations
+   - Connection pooling
+
+4. DevOps Integration:
+   - Docker for containerization
+   - Docker Compose for local development
+   - pytest for backend testing
+   - vitest for frontend testing
+   - Git for version control
+
+5. Future Integrations:
+   - Cesium Ion for production 3D tiles
+   - Keycloak for enterprise authentication
+   - PyTorch for ML services
+   - Open3D for 3D processing
+   - LangGraph for RAG/LLM integration
+
+Show data flow between components and highlight which technologies are currently in use vs planned for future implementation.
+```
+
+---
+
+## Usage Instructions
+
+To use these prompts with Eraser.io AI:
+
+1. **Copy the desired prompt** from the sections above
+2. **Paste it into Eraser.io's AI diagram generator**
+3. **Customize the prompt** if needed for specific focus areas
+4. **Generate the diagram** and refine iteratively
+
+Each prompt is designed to generate a comprehensive flow chart for that specific aspect of the BhuSphere 3D architecture. You can combine elements from multiple prompts or focus on specific sections based on your documentation needs.
+
+**Tips for Best Results:**
+- Start with the "Complete System Architecture Flow" for an overview
+- Use specific workflow prompts for detailed process documentation
+- Combine multiple diagrams to tell the complete architecture story
+- Refine prompts based on the initial generated results
+- Add specific details about your implementation if different from the described architecture

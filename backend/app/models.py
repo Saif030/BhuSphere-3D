@@ -157,3 +157,95 @@ class AuditLog(Base):
     old_value = Column(Text, nullable=True)
     new_value = Column(Text, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+# ---------------- Property Data Submission intake layer ----------------
+# Intake-only: submissions feed the existing cadastral tables above.
+# Citizen = authenticated user, UNVERIFIED data → human verification required.
+# Government department = authenticated + authorized source → auto-validate, no citizen queue.
+
+SUBMISSION_STATUSES = ("DRAFT", "SUBMITTED", "PENDING_VERIFICATION", "UNDER_VERIFICATION",
+                       "FIELD_CHECK", "CORRECTION_REQUIRED", "APPROVED", "REJECTED",
+                       "INTEGRATED", "NEEDS_REVIEW")
+
+class Submission(Base):
+    __tablename__ = "submissions"
+    id = Column(String, primary_key=True, default=uid)
+    submission_id = Column(String, unique=True, index=True)        # SUB-2026-000184
+    submitter = Column(String, index=True)                         # username
+    submitter_role = Column(String)                                # citizen | officer | surveyor | admin
+    source_type = Column(String)                                   # PROPERTY_OWNER | GOVERNMENT_DEPARTMENT
+    department = Column(String, nullable=True)                     # dept for govt submissions
+    kind = Column(String, default="new")                           # new | update
+    property_type = Column(String)                                 # Land Parcel | Apartment / Flat | ...
+    payload = Column(JSON, default=dict)                           # full wizard data (identification/address/parcel/...)
+    measurements = Column(JSON, default=dict)                      # {key: {value, unit, sqm}} canonical m²
+    target_parcel = Column(String, nullable=True)
+    target_building = Column(String, nullable=True)                # parcel-B key
+    target_floor = Column(String, nullable=True)                   # floor_id
+    target_unit = Column(String, nullable=True)                    # prototype ULPIN
+    status = Column(String, default="DRAFT", index=True)
+    trust = Column(String, default="UNVERIFIED")                   # UNVERIFIED | AUTHORIZED | VERIFIED
+    priority = Column(String, default="Normal")                    # Normal | High (AI assist)
+    assignee = Column(String, nullable=True)
+    version = Column(Integer, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+class SubmissionDocument(Base):
+    __tablename__ = "submission_documents"
+    id = Column(String, primary_key=True, default=uid)
+    submission_id = Column(String, ForeignKey("submissions.submission_id"), index=True)
+    doc_type = Column(String)                                      # Ownership document | Floor plan | ...
+    doc_number = Column(String, nullable=True)
+    doc_date = Column(String, nullable=True)
+    authority = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
+    filename = Column(String, nullable=True)                       # stored under backend/uploads/
+    mime = Column(String, nullable=True)
+    size = Column(Integer, default=0)
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+
+class SubmissionReview(Base):
+    __tablename__ = "submission_reviews"
+    id = Column(String, primary_key=True, default=uid)
+    submission_id = Column(String, ForeignKey("submissions.submission_id"), index=True)
+    reviewer = Column(String)
+    reviewer_role = Column(String)
+    action = Column(String)                                        # verify-start | approve | reject | correction | field-request | field-result
+    reason = Column(Text, nullable=True)
+    fields = Column(JSON, default=list)                            # fields needing correction
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class FieldVerification(Base):
+    __tablename__ = "field_verifications"
+    id = Column(String, primary_key=True, default=uid)
+    verification_id = Column(String, unique=True, index=True)      # FV-2026-0001
+    submission_id = Column(String, ForeignKey("submissions.submission_id"), index=True)
+    assignee = Column(String, nullable=True)
+    reason = Column(Text, nullable=True)
+    scheduled = Column(String, nullable=True)
+    checklist = Column(JSON, default=list)                         # [{item, done}]
+    observed = Column(JSON, default=dict)                          # coords/area/height/notes/...
+    recommendation = Column(String, nullable=True)                 # APPROVE | REJECT | REQUEST_CORRECTION
+    status = Column(String, default="Open")                        # Open | Completed
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class SubmissionVersion(Base):
+    __tablename__ = "submission_versions"
+    id = Column(String, primary_key=True, default=uid)
+    submission_id = Column(String, ForeignKey("submissions.submission_id"), index=True)
+    version = Column(Integer)
+    payload = Column(JSON, default=dict)
+    measurements = Column(JSON, default=dict)
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class SubmissionNotification(Base):
+    __tablename__ = "submission_notifications"
+    id = Column(String, primary_key=True, default=uid)
+    username = Column(String, index=True)
+    title = Column(String)
+    body = Column(Text, nullable=True)
+    link = Column(String, nullable=True)                           # e.g. /submit/track/SUB-2026-1
+    read = Column(String, default="0")                             # 0 | 1 (string for SQLite simplicity)
+    created_at = Column(DateTime, default=datetime.utcnow)

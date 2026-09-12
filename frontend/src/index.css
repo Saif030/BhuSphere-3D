@@ -25,6 +25,12 @@ body{font-family:Inter,system-ui,'Segoe UI',sans-serif;background:#0a1428;color:
 .maplibregl-popup-content{background:#111f3a !important;color:#e2e8f0 !important;border-radius:10px !important;border:1px solid rgba(255,255,255,.12);}
 .maplibregl-popup-tip{border-top-color:#111f3a !important;}
 
+.tour-spot{border-radius:12px;animation:tourPulse 1.6s ease-in-out infinite;scroll-margin:80px;}
+@keyframes tourPulse{
+  0%,100%{box-shadow:0 0 0 2px #22d3ee, 0 0 22px rgba(34,211,238,.45)}
+  50%{box-shadow:0 0 0 4px #22d3ee, 0 0 42px rgba(34,211,238,.75)}
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
 }

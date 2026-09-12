@@ -8,6 +8,7 @@ const ROLES: [string, string, string][] = [
   ['officer', 'Government Officer', 'Review, approve & resolve conflicts'],
   ['surveyor', 'Surveyor', 'Inspect geometry & submit verification'],
   ['admin', 'Administrator', 'Datasets, rules & analytics'],
+  ['citizen', 'Property Owner / Citizen', 'Submit property data for verification'],
   ['public', 'Public User', 'Safe public property identity'],
 ];
 const POINTS = [

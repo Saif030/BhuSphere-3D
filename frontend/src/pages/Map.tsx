@@ -10,11 +10,17 @@ import { StatusBadge } from '../components/ui';
 export default function MapPage() {
   const nav = useNavigate();
   const [sp] = useSearchParams();
-  const { highlights } = useStore();
+  const { highlights, setToast } = useStore();
   const [sel, setSel] = useState<any>(null);
   const [selLoading, setSelLoading] = useState(false);
   const [selError, setSelError] = useState('');
   const [layers, setLayers] = useState({ parcels: true, buildings: true, utils: false });
+  const [preview, setPreview] = useState<any>(null);
+  const [reloadToken, setReloadToken] = useState(0);
+  const [committing, setCommitting] = useState(false);
+  useEffect(() => {
+    try { const p = JSON.parse(localStorage.getItem('bhu_preview') || 'null'); if (p?.features?.length) setPreview(p); } catch {}
+  }, []);
   const [q, setQ] = useState(sp.get('q') || 'Green Residency');
   const { data: searchRes, refetch } = useQuery({ queryKey: ['s', q], queryFn: () => api.search(q), enabled: false });
   useEffect(() => { if (sp.get('q')) refetch(); }, []);
@@ -46,10 +52,28 @@ export default function MapPage() {
     if (url) nav(url);
   };
 
+  const discardPreview = () => {
+    localStorage.removeItem('bhu_preview'); setPreview(null);
+    setToast('Upload preview discarded — nothing was saved');
+  };
+  const acceptPreview = async () => {
+    if (!preview || committing) return;
+    setCommitting(true);
+    try {
+      const r = await api.post('/api/data/commit', { features: preview.features, filename: preview.filename });
+      const c = r.created || {};
+      const skip = (r.skipped || []).length ? ` · skipped ${(r.skipped || []).length} (already exist)` : '';
+      localStorage.removeItem('bhu_preview'); setPreview(null);
+      setReloadToken(t => t + 1);
+      setToast(`Committed live: ${c.parcels || 0} parcels, ${c.buildings || 0} buildings, ${c.utilities || 0} utilities${skip}. Marked Needs Review.`);
+    } catch (e: any) { setToast('Commit failed: ' + e.message); }
+    setCommitting(false);
+  };
+
   return (
     <div className="p-4 grid lg:grid-cols-[1fr_360px] gap-4 h-[calc(100vh-57px)]">
       <div className="flex flex-col gap-2 min-h-0">
-        <div className="panel p-2.5 flex flex-wrap gap-2 items-center text-sm">
+        <div className="panel p-2.5 flex flex-wrap gap-2 items-center text-sm" data-tour="tour-search">
           <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && refetch()}
             className="input flex-1 min-w-[200px]" placeholder="Search ULPIN / parcel / building / utility…" />
           <button onClick={() => refetch()} className="btn-primary">Search</button>
@@ -69,7 +93,16 @@ export default function MapPage() {
             <span className="inline-block w-2 h-2 rounded-sm bg-orange-500 ml-1" /> building
             <span className="inline-block w-4 h-0 border-t-2 border-dashed border-sky-400 ml-1 align-middle" /> utility</span>
         </div>
-        <div className="flex-1 min-h-0"><Map2D onSelect={onSelect} highlights={highlights} layerState={layers} /></div>
+        <div className="flex-1 min-h-0 relative">
+          <Map2D onSelect={onSelect} highlights={highlights} layerState={layers} preview={preview} reloadToken={reloadToken} />
+          {preview && <div className="absolute top-2 left-2 right-2 sm:right-auto panel px-3 py-2 flex flex-wrap items-center gap-2 text-xs">
+            <span className="inline-block w-2.5 h-2.5 rounded-sm bg-accent-400" />
+            <span className="text-slate-200 font-semibold">Preview: {preview.filename}</span>
+            <span className="text-slate-400">{preview.received} features · dashed cyan · not saved yet</span>
+            <button onClick={acceptPreview} disabled={committing} className="btn-primary !py-1 !text-xs disabled:opacity-50">{committing ? 'Committing…' : 'Accept & commit'}</button>
+            <button onClick={discardPreview} className="btn-ghost !py-1 !text-xs">Discard</button>
+          </div>}
+        </div>
       </div>
       <div className="panel p-4 overflow-auto scrollthin text-sm">
         <div className="th-label mb-2">Selection</div>
