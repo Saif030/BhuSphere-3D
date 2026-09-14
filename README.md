@@ -63,5 +63,10 @@ PostGIS+pgvector, Cesium Ion + 3D Tiles, CityGML/LADM, Bhu-Naksha/registration/C
 Keycloak/Merkle audit, LangGraph RAG over approval/floor-plan docs. See `docs/FUTURE.md`.
 
 ## Tests
+<<<<<<< HEAD
 `cd backend && python -m pytest tests/ -q` (14 tests: prior suite + B03 case, import breakdown, commit flow, citizen approve loop, govt fast path, validation/duplicates).
 `cd frontend && npm test` (vitest: ULPIN deep-link helpers + tour script + intake conversion/blocks).
+=======
+`cd backend && python -m pytest tests/ -q` (8 tests: health, auth, parcel→unit chain, AI, ULPIN, validation run+review, pagination, AI fallback).
+`cd frontend && npm test` (vitest: ULPIN deep-link helper).
+>>>>>>> 43772c0e1b1f6060b9d128bdf9bee316aaeb9a50
