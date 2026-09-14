@@ -248,7 +248,28 @@ function GovFooter() {
   );
 }
 
-export default function PublicLayout({ children, trail }: { children: React.ReactNode; trail?: { label: string; to?: string }[] }) {
+export default function PublicLayout({ children, trail, bleed }: { children: React.ReactNode; trail?: { label: string; to?: string }[]; bleed?: boolean }) {
+  // bleed mode: full-width bands (landing) manage their own inner max-w-7xl containers.
+  if (bleed) {
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col">
+        <GovTopBar />
+        <Masthead />
+        <PublicNav />
+        <main id="main-content" className="flex-1 w-full">
+          {trail && (
+            <div className="max-w-7xl mx-auto px-4 pt-6">
+              <Breadcrumb trail={trail} />
+            </div>
+          )}
+          {children}
+        </main>
+        <div className="[&>footer]:!mt-0">
+          <GovFooter />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col">
       <GovTopBar />

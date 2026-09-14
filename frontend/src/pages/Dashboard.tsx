@@ -43,6 +43,9 @@ export default function Dashboard() {
   const { auth } = useStore();
   const canSubmit = auth && ['citizen', 'officer', 'surveyor', 'admin'].includes(auth.role);
   const { data: subs } = useQuery({ queryKey: ['sub-stats'], queryFn: () => api.get('/api/dashboard/submissions'), enabled: !!canSubmit });
+  const isSurveyor = auth?.role === 'surveyor';
+  const isStaffField = auth && ['officer', 'surveyor', 'admin'].includes(auth.role);
+  const { data: fieldWork } = useQuery({ queryKey: ['field-stats'], queryFn: () => api.get('/api/field-verification/assigned'), enabled: !!isStaffField });
   // Honesty toggle: city-scale illustrative register vs the actual live demo dataset.
   const [scale, setScale] = useState(() => localStorage.getItem('bhu_scale') || 'city');
   const pick = (s: any) => { localStorage.setItem('bhu_scale', s); setScale(s); };
@@ -119,11 +122,37 @@ export default function Dashboard() {
       {!!canSubmit && (subs?.total || 0) > 0 && (
       <Section title="Submission intake" sub="Property data flowing into the cadastre">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[['Total', subs.total, '/submit/my'], ['Pending verification', subs.by_status?.PENDING_VERIFICATION || 0, auth?.role === 'citizen' ? '/submit/my' : '/submit/queue'],
-            ['Citizen', subs.citizen, '/submit/queue'], ['Government', subs.government, '/submit/my']].map(([l, v, to]: any) =>
+          {[['Total', subs.total, '/submit/my'],
+            ['Pending verification', subs.by_status?.PENDING_VERIFICATION || 0, auth?.role === 'citizen' ? '/submit/my' : isSurveyor ? '/field-work' : '/submit/queue'],
+            ['Citizen', subs.citizen, isSurveyor ? '/field-work' : '/submit/queue'],
+            ['Government', subs.government, '/submit/my']].map(([l, v, to]: any) =>
             <Link key={l} to={to} className="panel p-4 block hover:border-gov-navy/40 transition-colors">
               <div className="th-label">{l}</div><div className="text-2xl font-extrabold text-slate-900 mt-1">{v}</div></Link>)}
         </div>
+      </Section>)}
+      {!!isStaffField && !!fieldWork && (
+      <Section title={isSurveyor ? 'My field work' : 'Field work'} sub={isSurveyor ? 'Site visits assigned to you' : 'Field verification workload'}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {(() => {
+            const open = (fieldWork || []).filter((f: any) => f.status === 'Open').length;
+            const done = (fieldWork || []).filter((f: any) => f.status === 'Completed').length;
+            return [['Open visits', open, '/field-work'], ['Completed', done, '/field-work'],
+              ['My department filings', subs?.government || 0, '/submit/my'],
+              ['Start govt filing', '→', '/submit']].map(([l, v, to]: any) =>
+              <Link key={l} to={to} className="panel p-4 block hover:border-gov-navy/40 transition-colors">
+                <div className="th-label">{l}</div><div className="text-2xl font-extrabold text-slate-900 mt-1">{v}</div></Link>);
+          })()}
+        </div>
+        {!!(fieldWork || []).filter((f: any) => f.status === 'Open').length && (
+          <div className="mt-2 space-y-1.5">
+            {(fieldWork || []).filter((f: any) => f.status === 'Open').slice(0, 3).map((f: any) => (
+              <Link key={f.verification_id} to={`/field-work/${f.verification_id}`} className="panel px-4 py-2.5 flex items-center gap-2 text-xs hover:border-violet-300 transition-colors">
+                <span className="font-mono font-bold text-violet-700">{f.verification_id}</span>
+                <span className="font-mono text-gov-navy">{f.submission_id}</span>
+                <span className="text-slate-500 truncate">{f.reason || 'Site visit required'}</span>
+                <span className="ml-auto text-violet-700 font-semibold">Open →</span>
+              </Link>))}
+          </div>)}
       </Section>)}
       <Section title="Needs attention" sub="Latest validation findings — click through to the Validation Center">        <div className="panel divide-y divide-slate-100">
           {(issues || []).slice(0, 8).map((i: any) => (

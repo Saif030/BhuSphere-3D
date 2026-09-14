@@ -16,6 +16,7 @@ import { ValidationPage, ValidationCase, InfraPage, AdminPage, ReportsPage } fro
 import { SubmitLanding, SubmitWizard } from './pages/Submit';
 import { MySubmissions, TrackSubmission } from './pages/Track';
 import { VerifyQueue, VerifyWorkspace } from './pages/Queue';
+import { FieldWorkList, FieldWorkDetail } from './pages/FieldWork';
 import { Home, About, Services, HowItWorks, VerifyPublic, Help, Contact } from './pages/Public';
 
 const STAFF = ['officer', 'surveyor', 'admin'];
@@ -113,6 +114,8 @@ function Shell() {
         <Route path="/submit/track/:sid" element={<NeedRole roles={['citizen', 'officer', 'surveyor', 'admin']}><TrackSubmission /></NeedRole>} />
         <Route path="/submit/queue" element={<NeedRole roles={['officer', 'admin']}><VerifyQueue /></NeedRole>} />
         <Route path="/submit/verify/:sid" element={<NeedRole roles={['officer', 'admin']}><VerifyWorkspace /></NeedRole>} />
+        <Route path="/field-work" element={<NeedRole roles={['officer', 'surveyor', 'admin']}><FieldWorkList /></NeedRole>} />
+        <Route path="/field-work/:fvid" element={<NeedRole roles={['officer', 'surveyor', 'admin']}><FieldWorkDetail /></NeedRole>} />
         <Route path="*" element={<NotFound inside />} />
       </Routes>
       <Copilot open={copilot} onClose={() => setCopilot(false)} />

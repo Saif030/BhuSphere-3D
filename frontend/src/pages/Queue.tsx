@@ -8,6 +8,7 @@ import { entity3DLink } from '../lib/nav';
 import { Empty, PageHeader, Skeleton } from '../components/feedback';
 import { SubStatus } from './Submit';
 import { downloadDoc } from './Track';
+import Map2D from '../components/Map2D';
 
 const CHECKS = ['Property exists', 'Address matches', 'Parcel boundary matches', 'Building exists',
   'Floor exists', 'Unit exists', 'Measurements verified', 'Coordinates checked',
@@ -48,7 +49,7 @@ export function VerifyWorkspace() {
   const [exist, setExist] = useState<any>(null);
   const [reason, setReason] = useState('');
   const [corrFields, setCorrFields] = useState<string[]>([]);
-  const [fv, setFv] = useState({ assignee: '', reason: '', scheduled: '' });
+  const [fv, setFv] = useState({ assignee: 'surveyor', reason: '', scheduled: '' });
   const [fres, setFres] = useState({ obs: '', notes: '', rec: 'APPROVE', checks: CHECKS.map(c => ({ item: c, done: false })) });
   const [busy, setBusy] = useState(false);
 
@@ -78,8 +79,10 @@ export function VerifyWorkspace() {
   const createFV = async () => {
     setBusy(true);
     try {
-      const r = await api.post(`/api/submissions/${sid}/field-verification`, fv);
-      setToast(`Field verification ${r.verification_id} created`); refetch(); refetchH();
+      const payload = { ...fv, assignee: fv.assignee.trim() || 'surveyor' };
+      const r = await api.post(`/api/submissions/${sid}/field-verification`, payload);
+      setToast(`Field verification ${r.verification_id} assigned to ${payload.assignee} — visible in Field Work`); refetch(); refetchH();
+      setFv({ assignee: 'surveyor', reason: '', scheduled: '' });
     } catch (e: any) { setToast('Field request failed: ' + e.message); }
     setBusy(false);
   };
@@ -98,9 +101,20 @@ export function VerifyWorkspace() {
   if (isLoading) return <div className="p-6 text-sm text-slate-400">Opening workspace…</div>;
   if (isError || !s) return <div className="p-6 max-w-xl mx-auto"><Empty text="Submission not found." /></div>;
   const p = s.payload || {};
-  const openFVs = (hist?.field_verifications || []).filter((f: any) => f.status === 'Open');
+  const allFVs = hist?.field_verifications || [];
+  const openFVs = allFVs.filter((f: any) => f.status === 'Open');
+  const doneFVs = allFVs.filter((f: any) => f.status !== 'Open');
   const payloadKeys = Object.keys(p).filter(k => !['property_name'].includes(k)).slice(0, 24);
   const deep = entity3DLink(s.targets?.unit || s.targets?.building || s.targets?.parcel || '');
+  // Mini 2D preview: prefer linked unit → building → parcel → payload parcel_id
+  const _t = s.targets || {};
+  const _parcelId = _t.parcel || s.payload?.parcel_id;
+  const miniHighlight = _t.unit ? [{ type: 'unit', id: _t.unit }]
+    : _t.building ? [{ type: 'building', id: _t.building }]
+    : _parcelId ? [{ type: 'parcel', id: _parcelId }] : [];
+  const _lat = parseFloat(p.latitude), _lng = parseFloat(p.longitude);
+  const miniPoint: [number, number] | null =
+    isFinite(_lat) && isFinite(_lng) ? [_lng, _lat] : null;
 
   return (
     <div className="p-5 space-y-4 max-w-[1200px] mx-auto">
@@ -145,6 +159,18 @@ export function VerifyWorkspace() {
             <Link to={`/map?q=${encodeURIComponent(s.targets?.parcel || p.parcel_id || p.property_name || '')}`} className="btn-ghost !text-[11px] flex items-center gap-1"><MapIcon size={12} />View on 2D Map</Link>
             {deep && <Link to={deep} className="btn-ghost !text-[11px] flex items-center gap-1"><Box size={12} />Open 3D Building</Link>}
           </div>
+          {/* Mini location preview — isolated to this verification's property only */}
+          <div className="pt-1">
+            <div className="text-[11px] font-semibold text-slate-500 mb-1">Location preview — this property only</div>
+            {!!miniHighlight.length && (
+              <div className="h-56 rounded-xl overflow-hidden">
+                <Map2D compact focusOnly focusPoint={miniPoint} onSelect={() => {}} highlights={miniHighlight} layerState={{ parcels: true, buildings: true, utils: false }} />
+              </div>)}
+            {(p.latitude != null && p.longitude != null) && (
+              <div className="text-[11px] text-slate-500 mt-1 font-mono">Claimed: {p.latitude}, {p.longitude}</div>)}
+            {!miniHighlight.length && !(p.latitude != null && p.longitude != null) && (
+              <div className="text-[11px] text-slate-500 border border-dashed border-slate-200 rounded-xl p-3 text-center">No location linked yet — pick via lookup or map in the submission.</div>)}
+          </div>
           {(hist?.reviews || []).length > 0 && <div className="text-[11px] text-slate-500 border-t border-slate-200 pt-2">Prior actions: {(hist.reviews || []).map((r: any) => `${r.action} (${r.reviewer})`).join(' → ')}</div>}
         </div>
       </div>
@@ -169,15 +195,26 @@ export function VerifyWorkspace() {
       {/* field verification */}
       <div className="panel-pad space-y-2.5">
         <div className="font-bold text-slate-900 text-sm">Field verification {openFVs.length ? `(${openFVs.length} open)` : ''}</div>
+        <div className="text-[11px] text-slate-500">Assign a site visit to a surveyor. They complete it from <Link to="/field-work" className="gov-link">Field Work</Link> — your approval here is still the final decision. Demo account username is <b className="font-mono">surveyor</b>.</div>
         <div className="grid sm:grid-cols-3 gap-2 text-xs">
-          <label className="block"><span className="text-slate-400">Assign surveyor</span><input value={fv.assignee} onChange={e => setFv({ ...fv, assignee: e.target.value })} placeholder="surveyor" className="input w-full mt-1" /></label>
+          <label className="block"><span className="text-slate-400">Assign surveyor (username) — use “surveyor” for demo</span><input value={fv.assignee} onChange={e => setFv({ ...fv, assignee: e.target.value })} placeholder="surveyor" className="input w-full mt-1 font-mono" /></label>
           <label className="block"><span className="text-slate-400">Scheduled</span><input value={fv.scheduled} onChange={e => setFv({ ...fv, scheduled: e.target.value })} placeholder="YYYY-MM-DD" className="input w-full mt-1" /></label>
           <label className="block"><span className="text-slate-400">Reason</span><input value={fv.reason} onChange={e => setFv({ ...fv, reason: e.target.value })} placeholder="Why a site visit is needed" className="input w-full mt-1" /></label>
         </div>
         <button onClick={createFV} disabled={busy} className="btn-ghost !text-xs disabled:opacity-50">Create field request</button>
+        {!!doneFVs.length && (
+          <div className="space-y-1.5">
+            {doneFVs.map((f: any) => (
+              <div key={f.verification_id} className="text-xs border border-emerald-200 bg-emerald-50 rounded-lg px-2.5 py-1.5 flex flex-wrap items-center gap-2">
+                <span className="font-mono font-bold text-emerald-700">{f.verification_id}</span>
+                <span className="text-emerald-700">Completed{f.recommendation ? ` → ${f.recommendation}` : ''}</span>
+                {f.assignee && <span className="text-[11px] text-slate-500">by {f.assignee}</span>}
+                <Link to={`/field-work/${f.verification_id}`} className="gov-link ml-auto">View field record</Link>
+              </div>))}
+          </div>)}
         {openFVs.map((f: any) => (
           <div key={f.verification_id} className="border border-violet-200 rounded-xl p-2.5 space-y-2">
-            <div className="text-xs font-mono text-violet-700">{f.verification_id} · Open — record result (surveyor/officer)</div>
+            <div className="text-xs font-mono text-violet-700">{f.verification_id} · Open{f.assignee ? ` → ${f.assignee}` : ''} — surveyor records result from Field Work (officer may also submit here) · <Link to={`/field-work/${f.verification_id}`} className="gov-link">Open field record</Link></div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">{fres.checks.map((c, i) => (
               <button key={c.item} onClick={() => setFres(o => ({ ...o, checks: o.checks.map((x, j) => j === i ? { ...x, done: !x.done } : x) }))}
                 className={`text-[11px] text-left border rounded-lg px-2 py-1 ${c.done ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-400'}`}>{c.done ? '☑' : '☐'} {c.item}</button>))}</div>

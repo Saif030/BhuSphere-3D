@@ -4,10 +4,13 @@ import maplibregl from 'maplibre-gl';
 export type Sel = { kind: string; id: string } | null;
 
 /** 2D cadastral map: parcels + buildings + utilities, click-to-select, highlight support.
- *  `preview` renders an upload as a dashed-cyan overlay; `reloadToken` refetches base layers. */
-export default function Map2D({ onSelect, highlights, layerState, preview, reloadToken }:
+ *  `preview` renders an upload as a dashed-cyan overlay; `reloadToken` refetches base layers.
+ *  `focusOnly` isolates the mini preview to the single highlighted property (hides the rest
+ *  of the city); `focusPoint` marks the claimed lng/lat with an orange dot. */
+export default function Map2D({ onSelect, highlights, layerState, preview, reloadToken, compact, focusOnly, focusPoint }:
   { onSelect: (s: Sel, extra?: any) => void; highlights: any[]; layerState: any;
-    preview?: { features: any[]; bbox: number[] | null } | null; reloadToken?: number }) {
+    preview?: { features: any[]; bbox: number[] | null } | null; reloadToken?: number; compact?: boolean;
+    focusOnly?: boolean; focusPoint?: [number, number] | null }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -130,11 +133,89 @@ export default function Map2D({ onSelect, highlights, layerState, preview, reloa
     let x = 0, y = 0; ring.forEach((p: any) => { x += p[0]; y += p[1]; });
     return [x / ring.length, y / ring.length];
   };
+  const bboxOf = (ring: any[]): [number, number, number, number] | null => {
+    if (!ring?.length) return null;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const pt of ring) {
+      if (!Array.isArray(pt) || pt.length < 2) continue;
+      if (pt[0] < minX) minX = pt[0]; if (pt[1] < minY) minY = pt[1];
+      if (pt[0] > maxX) maxX = pt[0]; if (pt[1] > maxY) maxY = pt[1];
+    }
+    if (!isFinite(minX)) return null;
+    return [minX, minY, maxX, maxY];
+  };
+  const toParcelFeature = (pd: any) => pd ? {
+    type: 'Feature', properties: { id: pd.parcel_id, conf: pd.confidence, status: pd.verification_status },
+    geometry: { type: 'Polygon', coordinates: [pd.geometry] } } : null;
+  const toBuildingFeature = (bd: any) => bd ? {
+    type: 'Feature', properties: { id: bd.key, name: bd.name, conf: bd.confidence },
+    geometry: { type: 'Polygon', coordinates: [bd.geometry] } } : null;
+  const showClaimPoint = (map: maplibregl.Map, pt: [number, number] | null | undefined) => {
+    try {
+      if (map.getLayer('claim-dot')) map.removeLayer('claim-dot');
+      if (map.getSource('claim-point')) map.removeSource('claim-point');
+      if (!pt || !isFinite(pt[0]) || !isFinite(pt[1])) return;
+      map.addSource('claim-point', { type: 'geojson', data: { type: 'FeatureCollection', features: [
+        { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: pt } }] } as any });
+      map.addLayer({ id: 'claim-dot', type: 'circle', source: 'claim-point',
+        paint: { 'circle-radius': 7, 'circle-color': '#f97316', 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 } });
+    } catch {}
+  };
   useEffect(() => {
     const map = mapRef.current; if (!map || !map.isStyleLoaded()) return;
     let cancelled = false;
     const t = setTimeout(async () => {
       try {
+        // Focused mini preview: show ONLY the verified property, hide the rest of the city
+        if (focusOnly && highlights?.length) {
+          const h = highlights[0];
+          const raw = (map as any)._raw;
+          let parcelFeat: any = null, buildingFeat: any = null, ring: any[] | null = null;
+          if (h.type === 'parcel') {
+            let pd = raw?.parcels?.find((x: any) => x.parcel_id === h.id);
+            if (!pd) pd = await fetch('/api/parcels/' + h.id).then(r => r.ok ? r.json() : null).catch(() => null);
+            if (pd?.geometry || pd?.parcel_id) {
+              // fetched single-parcel shape uses {geometry, ...}; base-list shape uses raw fields
+              const full = pd.geometry ? pd : raw?.parcels?.find((x: any) => x.parcel_id === h.id);
+              parcelFeat = toParcelFeature({ parcel_id: h.id, confidence: pd.confidence ?? full?.confidence ?? 95, verification_status: pd.verification_status ?? full?.verification_status ?? 'Verified', geometry: pd.geometry ?? full?.geometry });
+              ring = (pd.geometry ?? full?.geometry) || null;
+            }
+          } else if (h.type === 'building') {
+            let bd = raw?.buildings?.find((x: any) => x.key === h.id);
+            if (!bd) {
+              const parts = String(h.id).split('-'); const code = parts.pop(); const parcel = parts.join('-');
+              bd = await fetch(`/api/buildings/${parcel}/${code}`).then(r => r.ok ? r.json() : null).catch(() => null);
+              if (bd) bd = { key: h.id, name: bd.name, confidence: bd.confidence, geometry: bd.geometry };
+            }
+            buildingFeat = toBuildingFeature(bd);
+            ring = bd?.geometry || null;
+          } else if (h.type === 'unit' || h.type === 'floor') {
+            // unit geometry isn't exposed by the API — fall back to its parent building
+            const bk = h.type === 'unit' ? String(h.id).split('-').slice(0, 4).join('-') : String(h.id).split('-').slice(0, 4).join('-');
+            let bd = raw?.buildings?.find((x: any) => x.key === bk);
+            if (!bd && bk.includes('-')) {
+              const parts = bk.split('-'); const code = parts.pop(); const parcel = parts.join('-');
+              bd = await fetch(`/api/buildings/${parcel}/${code}`).then(r => r.ok ? r.json() : null).catch(() => null);
+              if (bd) bd = { key: bk, name: bd.name, confidence: bd.confidence, geometry: bd.geometry };
+            }
+            buildingFeat = toBuildingFeature(bd);
+            ring = bd?.geometry || null;
+          }
+          try {
+            (map.getSource('parcels') as any)?.setData({ type: 'FeatureCollection', features: parcelFeat ? [parcelFeat] : [] });
+            (map.getSource('buildings') as any)?.setData({ type: 'FeatureCollection', features: buildingFeat ? [buildingFeat] : [] });
+            (map.getSource('utils') as any)?.setData({ type: 'FeatureCollection', features: [] });
+          } catch {}
+          showClaimPoint(map, focusPoint);
+          const bb = ring ? bboxOf(ring) : null;
+          if (bb && !cancelled) {
+            const pad = 0.0006;
+            map.fitBounds([[bb[0] - pad, bb[1] - pad], [bb[2] + pad, bb[3] + pad]], { padding: 28, duration: 900, maxZoom: 18 });
+          } else if (focusPoint && !cancelled) {
+            map.flyTo({ center: focusPoint, zoom: 17, duration: 900 });
+          }
+          return;
+        }
         for (const [layer, vis] of [['parcel-fill', layerState.parcels], ['parcel-line', layerState.parcels],
              ['bld-fill', layerState.buildings], ['bld-line', layerState.buildings], ['util-line', layerState.utils]]) {
           if (map.getLayer(layer)) map.setLayoutProperty(layer, 'visibility', vis ? 'visible' : 'none');
@@ -163,7 +244,7 @@ export default function Map2D({ onSelect, highlights, layerState, preview, reloa
       } catch {}
     }, 400);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [highlights, layerState]);
+  }, [highlights, layerState, focusOnly, focusPoint]);
 
-  return <div ref={ref} className="w-full h-full min-h-[420px] rounded-xl overflow-hidden border border-slate-700" />;
+  return <div ref={ref} className={`w-full h-full rounded-xl overflow-hidden border border-slate-700 ${compact ? 'min-h-[220px]' : 'min-h-[420px]'}`} />;
 }

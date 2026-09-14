@@ -31,186 +31,250 @@ export function Home() {
     if (v) nav('/verify?ulpin=' + encodeURIComponent(v));
   };
   return (
-    <PublicLayout>
-      {/* Hero */}
-      <section className="grid lg:grid-cols-[1.2fr_.8fr] gap-6 items-center bg-white border border-slate-200 rounded-2xl shadow-panel p-6 md:p-10 overflow-hidden relative">
+    <PublicLayout bleed>
+      {/* Hero — headline only, generous whitespace */}
+      <section className="bg-gradient-to-b from-white via-white to-slate-50 border-b border-slate-200 relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 tricolor" aria-hidden />
+        <div className="max-w-7xl mx-auto px-4 pt-12 pb-14 md:pt-16 md:pb-20 grid lg:grid-cols-[1.05fr_.95fr] gap-12 lg:gap-16 items-center">
         <Reveal>
           <div className="inline-flex items-center gap-2 text-[11px] font-bold text-gov-navy bg-blue-50 border border-blue-100 rounded-full px-3 py-1">
             <span className="w-2 h-2 rounded-full bg-gov-green animate-pulse" /> SIH 2026 PROTOTYPE · DILRMP-INSPIRED
           </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mt-3 leading-tight">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mt-4 leading-[1.08]">
             Vertical property records, <span className="text-gov-navy">floor by floor,</span>{' '}
             <span className="text-gov-saffron">unit by unit.</span>
           </h1>
-          <p className="text-sm md:text-base text-slate-600 mt-3 leading-relaxed max-w-xl">
+          <p className="text-base text-slate-600 mt-4 leading-relaxed max-w-lg">
             BhuSphere 3D demonstrates how parcels, buildings, floors and apartments can be mapped as 3D
             spatial volumes — with validation, QR identity and a citizen submission workflow aligned to
             Digital India Land Records Modernisation Programme concepts.
           </p>
-          <div className="flex flex-wrap gap-2 mt-5">
-            <Link to="/verify" className="btn-primary !px-5 !py-2.5 inline-flex items-center gap-1.5">
+          <div className="flex flex-wrap gap-3 mt-8">
+            <Link to="/verify" className="btn-primary !px-6 !py-3 inline-flex items-center gap-1.5">
               Verify property <ArrowRight size={15} />
             </Link>
-            <Link to="/login?role=citizen" className="btn-saffron !px-5 !py-2.5">Submit property data</Link>
-            <Link to="/about" className="btn-ghost !px-5 !py-2.5">Learn more</Link>
+            <Link to="/login?role=citizen" className="btn-saffron !px-6 !py-3">Submit property data</Link>
+            <Link to="/about" className="btn-ghost !px-6 !py-3 bg-white">Learn more</Link>
           </div>
-          {/* ULPIN search */}
-          <div className="mt-5 bg-slate-50 border border-slate-200 rounded-xl p-3">
-            <label htmlFor="home-ulpin" className="text-xs font-semibold text-slate-700">
-              Verify by property reference (demo ULPIN)
-            </label>
-            <div className="flex gap-2 mt-1.5">
-              <div className="flex items-center bg-white border border-slate-300 rounded-lg px-2.5 flex-1 focus-within:border-gov-navy">
-                <Search size={15} className="text-slate-400 shrink-0" />
-                <input
-                  id="home-ulpin"
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && goVerify()}
-                  placeholder="e.g. DL-SKT-0182-B01-F08-U804"
-                  className="bg-transparent text-sm font-mono px-2 py-2 w-full focus:outline-none"
-                />
-              </div>
-              <button onClick={goVerify} className="btn-primary shrink-0">Verify</button>
-            </div>
-            <div className="text-[11px] text-slate-500 mt-1.5">{PORTAL_META.disclaimer}</div>
-          </div>
+          <p className="text-xs text-slate-500 mt-8 flex items-center gap-1.5">
+            <CheckCircle2 size={14} className="text-gov-green" /> No login needed to verify · Demo data only · Hindi / English
+          </p>
         </Reveal>
         <Reveal delay={120} className="hidden lg:block">
-          <div className="bg-gradient-to-br from-blue-50 via-white to-orange-50 border border-slate-200 rounded-2xl p-6 animate-float-soft">
+          <div className="bg-gradient-to-br from-blue-50 via-white to-orange-50 border border-slate-200 rounded-2xl p-7 shadow-panel animate-float-soft">
             <div className="text-xs font-bold text-gov-navy uppercase tracking-wider">Property stack</div>
-            <div className="mt-3 space-y-1.5" aria-hidden>
+            <p className="text-xs text-slate-500 mt-1">Parcel → building → floor → unit</p>
+            <div className="mt-4 space-y-3" aria-hidden>
               {[
                 ['Parcel · DL-SKT-0182', 'Survey + locality record', 'bg-gov-navy'],
                 ['Building · B01 Green Residency', '12 floors · verified height', 'bg-blue-500'],
                 ['Floor · F08', 'z 24–27 m · 8 units', 'bg-sky-400'],
                 ['Unit · U804', '96.4% confidence · QR identity', 'bg-gov-saffron'],
               ].map(([t, s, c]) => (
-                <div key={t} className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-3 py-2.5 shadow-sm">
-                  <span className={`w-2.5 h-9 rounded-full ${c}`} />
-                  <div><div className="text-xs font-bold text-slate-800 font-mono">{t}</div><div className="text-[11px] text-slate-500">{s}</div></div>
-                  <ShieldCheck size={15} className="ml-auto text-gov-green" />
+                <div key={t} className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3.5 shadow-sm">
+                  <span className={`w-2.5 h-11 rounded-full ${c}`} />
+                  <div><div className="text-xs font-bold text-slate-800 font-mono">{t}</div><div className="text-[11px] text-slate-500 mt-0.5">{s}</div></div>
+                  <ShieldCheck size={16} className="ml-auto text-gov-green" />
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-3 gap-2 mt-4 text-center">
+            <div className="grid grid-cols-3 gap-3 mt-5 text-center">
               {[[Building2, '3D volumes'], [Layers, 'GIS + LiDAR'], [ScanLine, 'QR identity']].map(([Icon, t]: any) => (
-                <div key={t} className="bg-white border border-slate-200 rounded-xl py-2.5 px-1">
-                  <Icon size={17} className="mx-auto text-gov-navy" /><div className="text-[11px] font-semibold text-slate-600 mt-1">{t}</div>
+                <div key={t} className="bg-white border border-slate-200 rounded-xl py-3 px-1">
+                  <Icon size={18} className="mx-auto text-gov-navy" /><div className="text-[11px] font-semibold text-slate-600 mt-1.5">{t}</div>
                 </div>
               ))}
             </div>
           </div>
         </Reveal>
+        </div>
       </section>
 
-      {/* Trust strip */}
-      <Reveal className="mt-4">
-        <div className="grid sm:grid-cols-3 gap-3 text-xs">
-          {[
-            ['Bhu-Aadhaar concept', 'Demo ULPINs show parcel → unit lineage like the national ULPIN idea.'],
-            ['DILRMP-aligned flow', 'Submit → validate → officer verification → approval. No bypass.'],
-            ['QR for every unit', 'Public identity carries safe fields only — no sensitive owner data.'],
-          ].map(([t, d]) => (
-            <div key={t} className="bg-white border border-slate-200 rounded-xl px-4 py-3 flex gap-2.5">
-              <CheckCircle2 size={16} className="text-gov-green shrink-0 mt-0.5" />
-              <div><div className="font-bold text-slate-800">{t}</div><div className="text-slate-500 mt-0.5">{d}</div></div>
+      {/* Verify band — separated from hero for breathing room */}
+      <section className="bg-gov-navy text-white">
+        <div className="max-w-7xl mx-auto px-4 py-10 md:py-12 grid lg:grid-cols-[1fr_1.1fr] gap-8 items-center">
+          <Reveal>
+            <div className="text-[11px] font-bold uppercase tracking-widest text-orange-300">Verify property</div>
+            <h2 className="text-xl md:text-2xl font-bold tracking-tight mt-1">Have a reference? Check it in seconds.</h2>
+            <p className="text-sm text-slate-300 mt-2 leading-relaxed max-w-md">
+              Enter the demo reference from a QR or notice. Public mode shows geometry and
+              verification status only — no login needed.
+            </p>
+          </Reveal>
+          <Reveal delay={100}>
+            <div className="bg-white text-slate-800 rounded-2xl p-5 md:p-6 shadow-lg">
+              <label htmlFor="home-ulpin" className="text-xs font-semibold text-slate-700">
+                Property reference (demo ULPIN)
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                <div className="flex items-center bg-slate-50 border border-slate-300 rounded-lg px-2.5 flex-1 focus-within:border-gov-navy">
+                  <Search size={15} className="text-slate-400 shrink-0" />
+                  <input
+                    id="home-ulpin"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && goVerify()}
+                    placeholder="e.g. DL-SKT-0182-B01-F08-U804"
+                    className="bg-transparent text-sm font-mono px-2 py-2.5 w-full focus:outline-none"
+                  />
+                </div>
+                <button onClick={goVerify} className="btn-primary !py-2.5 shrink-0">Verify →</button>
+              </div>
+              <div className="text-[11px] text-slate-500 mt-2.5">{PORTAL_META.disclaimer}</div>
             </div>
-          ))}
+          </Reveal>
         </div>
-      </Reveal>
+      </section>
 
-      {/* Services */}
-      <section className="mt-10">
+      {/* Trust strip — airy, one idea per card */}
+      <section className="bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 py-12 md:py-16">
         <Reveal>
-          <div className="flex items-end gap-3 flex-wrap">
+          <div className="grid sm:grid-cols-3 gap-5 text-sm">
+            {[
+              ['Bhu-Aadhaar concept', 'Demo ULPINs show parcel → unit lineage like the national ULPIN idea.'],
+              ['DILRMP-aligned flow', 'Submit → validate → officer verification → approval. No bypass.'],
+              ['QR for every unit', 'Public identity carries safe fields only — no sensitive owner data.'],
+            ].map(([t, d]) => (
+              <div key={t} className="bg-white border border-slate-200 rounded-2xl px-5 py-5 flex gap-3 shadow-sm">
+                <CheckCircle2 size={19} className="text-gov-green shrink-0 mt-0.5" />
+                <div><div className="font-bold text-slate-800">{t}</div><div className="text-slate-500 text-[13px] mt-1 leading-relaxed">{d}</div></div>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+        </div>
+      </section>
+
+      {/* Services — generous rhythm */}
+      <section className="bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 pb-16 md:pb-20">
+        <Reveal>
+          <div className="flex items-end gap-4 flex-wrap max-w-3xl">
             <div><div className="text-[11px] font-bold uppercase tracking-widest text-gov-saffron">Citizen services</div>
-            <h2 className="gov-section-title">What can you do here?</h2></div>
+            <h2 className="text-2xl md:text-3xl font-bold text-gov-navy tracking-tight mt-1">What can you do here?</h2>
+            <p className="text-sm text-slate-500 mt-2">Six starting points. Public checks need no login — workspace actions sign you in.</p></div>
             <Link to="/services" className="ml-auto text-sm font-semibold text-gov-navy hover:underline underline-offset-2">All services →</Link>
           </div>
         </Reveal>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-8">
           {SERVICES.map((s, i) => {
             const Icon = ICONS[s.icon] || FileText;
             return (
-              <Reveal key={s.title} delay={i * 60}>
-                <Link to={s.to} className="gov-card block h-full">
-                  <span className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center"><Icon size={19} className="text-gov-navy" /></span>
-                  <div className="font-bold text-slate-900 mt-3">{s.title}</div>
-                  <div className="text-xs text-slate-500 mt-1 leading-relaxed">{s.desc}</div>
-                  <div className="text-xs font-bold text-gov-saffron mt-2">Open →</div>
+              <Reveal key={s.title} delay={Math.min(i * 60, 180)}>
+                <Link to={s.to} className="gov-card block h-full !p-6">
+                  <span className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center"><Icon size={21} className="text-gov-navy" /></span>
+                  <div className="font-bold text-slate-900 mt-4">{s.title}</div>
+                  <div className="text-[13px] text-slate-500 mt-1.5 leading-relaxed">{s.desc}</div>
+                  <div className="text-xs font-bold text-gov-saffron mt-3">Open →</div>
                 </Link>
               </Reveal>
             );
           })}
         </div>
+        </div>
       </section>
 
-      {/* How it works */}
-      <section className="mt-10 bg-white border border-slate-200 rounded-2xl p-6 md:p-8">
+      {/* How it works — full-bleed white band with timeline rhythm */}
+      <section className="bg-white border-y border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 py-14 md:py-20">
         <Reveal>
-          <div className="text-[11px] font-bold uppercase tracking-widest text-gov-saffron">How it works</div>
-          <h2 className="gov-section-title">From submission to verified record</h2>
+          <div className="max-w-2xl"><div className="text-[11px] font-bold uppercase tracking-widest text-gov-saffron">How it works</div>
+          <h2 className="text-2xl md:text-3xl font-bold text-gov-navy tracking-tight mt-1">From submission to verified record</h2>
+          <p className="text-sm text-slate-500 mt-2 leading-relaxed">Four clear stages. Nothing becomes official until an authorised officer approves it.</p></div>
         </Reveal>
-        <ol className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
+        <ol className="relative grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-10">
+          <div className="hidden lg:block absolute top-5 left-[12%] right-[12%] h-px bg-slate-200" aria-hidden />
           {STEPS_CITIZEN.map((s, i) => (
             <Reveal key={s.n} delay={i * 70}>
-              <li className="bg-slate-50 border border-slate-200 rounded-xl p-4 h-full">
-                <div className="w-8 h-8 rounded-full bg-gov-navy text-white text-sm font-bold flex items-center justify-center">{s.n}</div>
-                <div className="font-bold text-slate-900 mt-2.5">{s.title}</div>
-                <div className="text-xs text-slate-500 mt-1 leading-relaxed">{s.desc}</div>
+              <li className="relative bg-slate-50 border border-slate-200 rounded-2xl p-6 h-full">
+                <div className="relative z-10 w-10 h-10 rounded-full bg-gov-navy text-white text-sm font-bold flex items-center justify-center ring-4 ring-white">{s.n}</div>
+                <div className="font-bold text-slate-900 mt-4">{s.title}</div>
+                <div className="text-[13px] text-slate-500 mt-1.5 leading-relaxed">{s.desc}</div>
               </li>
             </Reveal>
           ))}
         </ol>
         <Reveal>
-          <div className="mt-4 text-xs text-slate-500 bg-amber-50 border border-amber-200 rounded-xl p-3">
+          <div className="max-w-3xl mx-auto mt-10 text-[13px] text-slate-600 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 text-center leading-relaxed">
             Citizen submissions are <b>unverified claims</b> until an authorised officer approves them. Ownership details never establish legal title.
           </div>
         </Reveal>
+        </div>
       </section>
 
-      {/* Notices + Help */}
-      <section className="mt-10 grid lg:grid-cols-2 gap-4">
+      {/* Notices — own band, room to scan */}
+      <section className="bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 py-14 md:py-16">
         <Reveal>
-          <div className="panel-pad h-full">
-            <div className="flex items-center gap-2 mb-3">
-              <Bell size={16} className="text-gov-saffron" />
-              <h2 className="font-bold text-slate-900">Notices & updates</h2>
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm">
+            <div className="flex items-center gap-2.5 mb-2">
+              <span className="w-9 h-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center"><Bell size={17} className="text-gov-saffron" /></span>
+              <h2 className="font-bold text-lg text-slate-900">Notices & updates</h2>
               <span className="ml-auto text-[11px] text-slate-400">Demo board</span>
             </div>
             <ul className="divide-y divide-slate-100">
               {NOTICES.map((n) => (
-                <li key={n.title} className="py-2.5 flex gap-3 text-sm">
-                  <span className="text-[10px] font-bold h-fit mt-0.5 px-2 py-0.5 rounded-full bg-blue-50 text-gov-navy border border-blue-100 whitespace-nowrap">{n.tag}</span>
-                  <div><div className="text-slate-800 font-medium leading-snug">{n.title}</div><div className="text-[11px] text-slate-400 mt-0.5">{n.date}</div></div>
+                <li key={n.title} className="py-4 flex gap-4 text-sm">
+                  <span className="text-[10px] font-bold h-fit mt-1 px-2.5 py-1 rounded-full bg-blue-50 text-gov-navy border border-blue-100 whitespace-nowrap">{n.tag}</span>
+                  <div><div className="text-slate-800 font-medium leading-snug">{n.title}</div><div className="text-[11px] text-slate-400 mt-1">{n.date}</div></div>
                 </li>
               ))}
             </ul>
           </div>
         </Reveal>
-        <Reveal delay={100}>
-          <div className="panel-pad h-full">
-            <h2 className="font-bold text-slate-900 mb-1">Who is this for?</h2>
-            <p className="text-xs text-slate-500 mb-3">One portal, role-based workspaces after login.</p>
-            <div className="space-y-2 text-sm">
-              {[
-                ['Property Owner / Citizen', 'Submit, track, correction, QR identity. No system counts — only your services.'],
-                ['Government Officer', 'Verification queue, approvals, validation centre, reports, audit trail.'],
-                ['Surveyor', 'Field checks, geometry inspection, measurement verification.'],
-              ].map(([t, d]) => (
-                <div key={t} className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5">
-                  <div className="font-bold text-slate-800 text-[13px]">{t}</div><div className="text-xs text-slate-500">{d}</div>
-                </div>
-              ))}
+        </div>
+      </section>
+
+      {/* Audiences — separate soft band, not squeezed beside notices */}
+      <section className="bg-[#EDF1F7] border-y border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 py-14 md:py-20">
+        <Reveal>
+          <div className="max-w-2xl">
+            <div className="text-[11px] font-bold uppercase tracking-widest text-gov-saffron">Who is this for?</div>
+            <h2 className="text-2xl md:text-3xl font-bold text-gov-navy tracking-tight mt-1">One portal, role-based workspaces</h2>
+            <p className="text-sm text-slate-500 mt-2">Sign in after exploring — each role sees only its own workspace.</p>
+          </div>
+        </Reveal>
+        <div className="grid md:grid-cols-3 gap-5 mt-8">
+          {[
+            ['Property Owner / Citizen', 'Submit, track, correction, QR identity. No system counts — only your services.'],
+            ['Government Officer', 'Verification queue, approvals, validation centre, reports, audit trail.'],
+            ['Surveyor', 'Field checks, geometry inspection, measurement verification.'],
+          ].map(([t, d], i) => (
+            <Reveal key={t} delay={i * 70}>
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 h-full shadow-sm">
+                <div className="font-bold text-slate-900">{t}</div><div className="text-[13px] text-slate-500 mt-1.5 leading-relaxed">{d}</div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+        <Reveal>
+          <div className="flex flex-wrap gap-3 mt-8">
+            <Link to="/login" className="btn-primary !px-6 !py-2.5">Sign in to workspace</Link>
+            <Link to="/help" className="btn-ghost !px-6 !py-2.5 bg-white">Read FAQs</Link>
+          </div>
+        </Reveal>
+        </div>
+      </section>
+
+      {/* Closing CTA — gives the long page a proper ending */}
+      <section className="bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 py-14 md:py-16">
+        <Reveal>
+          <div className="bg-gov-navy text-white rounded-3xl px-6 py-10 md:p-12 flex flex-col md:flex-row md:items-center gap-6 overflow-hidden relative">
+            <div className="absolute top-0 left-0 right-0 tricolor opacity-90" aria-hidden />
+            <div className="max-w-xl">
+              <h2 className="text-xl md:text-2xl font-bold tracking-tight">Start with a public check — no account needed.</h2>
+              <p className="text-sm text-slate-300 mt-2 leading-relaxed">Verify a demo property, then explore the map, 3D stack, or submission flow at your own pace.</p>
             </div>
-            <div className="flex gap-2 mt-3">
-              <Link to="/login" className="btn-primary text-xs">Sign in to workspace</Link>
-              <Link to="/help" className="btn-ghost text-xs">Read FAQs</Link>
+            <div className="flex flex-wrap gap-3 md:ml-auto">
+              <Link to="/verify" className="bg-white text-gov-navy font-semibold rounded-lg px-6 py-2.5 text-sm hover:bg-slate-100">Verify property</Link>
+              <Link to="/how-it-works" className="border border-white/30 text-white font-semibold rounded-lg px-6 py-2.5 text-sm hover:bg-white/10">How it works</Link>
             </div>
           </div>
         </Reveal>
+        </div>
       </section>
     </PublicLayout>
   );

@@ -1,7 +1,7 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { LayoutDashboard, Map as MapIcon, Box, ShieldAlert, Cable, Bot, FileText, Settings, LogOut, Search, Presentation, ClipboardEdit, Bell, Home, LifeBuoy } from 'lucide-react';
+import { LayoutDashboard, Map as MapIcon, Box, ShieldAlert, Cable, Bot, FileText, Settings, LogOut, Search, Presentation, ClipboardEdit, ClipboardCheck, Bell, Home, LifeBuoy } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { api } from '../lib/api';
 import DemoTour from './DemoTour';
@@ -27,7 +27,7 @@ function groupsFor(role?: string) {
       ['/validation', 'Validation', ShieldAlert], ['/infrastructure', 'Infrastructure', Cable], ['/reports', 'Reports', FileText]] as [string, string, any][],
       roles: STAFF },
     { title: 'Submit Data', items: [
-      ['/submit', 'Submit Property', ClipboardEdit], ['/submit/my', 'My Submissions', FileText], ['/submit/queue', 'Verify Queue', ShieldAlert]] as [string, string, any][],
+      ['/submit', 'Submit Property', ClipboardEdit], ['/submit/my', 'My Submissions', FileText], ['/field-work', 'Field Work', ClipboardCheck], ['/submit/queue', 'Verify Queue', ShieldAlert]] as [string, string, any][],
       roles: ['citizen', 'officer', 'surveyor', 'admin'] },
     { title: 'System', items: [['/admin', 'Admin', Settings]] as [string, string, any][], roles: ['admin'] },
   ];
@@ -91,7 +91,11 @@ export default function Layout({ children, onCopilot }: { children: React.ReactN
             <div key={g.title}>
               <div className="hidden md:flex items-center gap-1.5 px-3 mb-1 th-label">{g.title}</div>
               <div className="space-y-0.5">
-                {g.items.filter(([to]) => to !== '/submit/queue' || (auth && ['officer', 'admin'].includes(auth.role))).map(([to, label, Icon]: any) => (
+                {g.items.filter(([to]) => {
+                  if (to === '/submit/queue') return auth && ['officer', 'admin'].includes(auth.role);
+                  if (to === '/field-work') return auth && ['officer', 'surveyor', 'admin'].includes(auth.role);
+                  return true;
+                }).map(([to, label, Icon]: any) => (
                   <NavLink key={to} to={to} title={label as string} end={to !== '/validation'}
                     className={({ isActive }) => `relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${isActive ? 'bg-blue-50 text-gov-navy font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
                     {({ isActive }) => (<>

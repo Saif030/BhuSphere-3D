@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { User, Landmark, MapPin, ArrowLeft, ArrowRight, Save, UploadCloud, CheckCircle2 } from 'lucide-react';
+import { User, Landmark, MapPin, ArrowLeft, ArrowRight, Save, UploadCloud, CheckCircle2, Sparkles } from 'lucide-react';
 import Map2D from '../components/Map2D';
 import { StatusBadge } from '../components/ui';
 import { Empty, PageHeader, Skeleton } from '../components/feedback';
@@ -20,18 +20,26 @@ export function SubmitLanding() {
   const role = auth?.role || 'public';
   const isGovt = ['officer', 'surveyor', 'admin'].includes(role);
   const isCitizen = role === 'citizen';
+  const isSurveyor = role === 'surveyor';
+  // Surveyors are government field staff — they never file as property owners.
+  const canOwnerSubmit = isCitizen || role === 'officer' || role === 'admin';
   return (
     <div className="p-5 space-y-4 max-w-[1000px] mx-auto">
       <PageHeader title="Property Data Submission" sub="Submit or update property information for integration into the 3D cadastral system." />
-      <div className="grid md:grid-cols-2 gap-3">
-        <div className="panel-pad space-y-2">
-          <div className="flex items-center gap-2 text-slate-900 font-bold"><User size={18} className="text-gov-navy" />Property Owner / Citizen</div>
-          <div className="text-xs text-slate-400">Submit or update your property information. Citizen submissions are reviewed by an authorized government officer before becoming verified cadastral information.</div>
-          <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">Flow: submission → automatic validation → human verification → approval → live record.</div>
-          {isCitizen || isGovt
-            ? <Link to="/submit/new" className="btn-primary inline-block">Submit as Property Owner</Link>
-            : <div className="text-xs text-slate-500">Sign in as <b>citizen</b> (demo123) to submit as a property owner.</div>}
-        </div>
+      {isSurveyor && (
+        <div className="text-xs text-violet-700 bg-violet-50 border border-violet-200 rounded-lg p-2.5">
+          Surveyor workspace: file authenticated department data below, and complete site visits from <b>Field Work</b>. You do not file as a property owner — owner claims come from citizens and are assigned to you for verification.
+        </div>)}
+      <div className={`grid gap-3 ${isSurveyor ? '' : 'md:grid-cols-2'}`}>
+        {!isSurveyor && (
+          <div className="panel-pad space-y-2">
+            <div className="flex items-center gap-2 text-slate-900 font-bold"><User size={18} className="text-gov-navy" />Property Owner / Citizen</div>
+            <div className="text-xs text-slate-400">Submit or update your property information. Citizen submissions are reviewed by an authorized government officer before becoming verified cadastral information.</div>
+            <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">Flow: submission → automatic validation → human verification → approval → live record.</div>
+            {canOwnerSubmit
+              ? <Link to="/submit/new" className="btn-primary inline-block">Submit as Property Owner</Link>
+              : <div className="text-xs text-slate-500">Sign in as <b>citizen</b> (demo123) to submit as a property owner.</div>}
+          </div>)}
         <div className="panel-pad space-y-2">
           <div className="flex items-center gap-2 text-slate-900 font-bold"><Landmark size={18} className="text-gov-navy" />Government / Authorized Department</div>
           <div className="text-xs text-slate-400">Submit authenticated property, land, building, infrastructure, or spatial information from an authorized department.</div>
@@ -42,9 +50,11 @@ export function SubmitLanding() {
         </div>
       </div>
       {(isCitizen || isGovt) && (
-        <div className="flex gap-2 text-xs">
+        <div className="flex gap-2 text-xs flex-wrap">
           <Link to="/submit/my" className="btn-ghost">My Submissions</Link>
-          {isGovt && <Link to="/submit/queue" className="btn-ghost">Verification Queue</Link>}
+          {isSurveyor && <Link to="/field-work" className="btn-ghost">My Field Work</Link>}
+          {(role === 'officer' || role === 'admin') && <Link to="/submit/queue" className="btn-ghost">Verification Queue</Link>}
+          {(role === 'officer' || role === 'admin') && <Link to="/field-work" className="btn-ghost">All Field Work</Link>}
         </div>)}
     </div>
   );
@@ -72,7 +82,10 @@ export function SubmitWizard() {
   const nav = useNavigate();
   const [sp] = useSearchParams();
   const role = auth?.role || 'public';
-  const govtMode = sp.get('as') === 'govt' && ['officer', 'surveyor', 'admin'].includes(role);
+  // Surveyors always file as an authorized department — never as property owners.
+  const govtMode = role === 'surveyor'
+    ? ['officer', 'surveyor', 'admin'].includes(role)
+    : sp.get('as') === 'govt' && ['officer', 'surveyor', 'admin'].includes(role);
   const [step, setStep] = useState(0);
   const [sid, setSid] = useState<string | null>(sp.get('draft'));
   const [kind, setKind] = useState('new');
@@ -97,6 +110,50 @@ export function SubmitWizard() {
   const set = (k: any, v?: any) => setP((o: any) => (typeof k === 'string' ? { ...o, [k]: v } : { ...o, ...k }));
   const setM = (k: string, patch: any) => setMeas((o: any) => ({ ...o, [k]: { ...(o[k] || EMPTY_M()), ...patch } }));
   const blocks = showBlocks(propertyType);
+
+  // Showcase: one-click fill of the entire wizard with realistic demo data
+  const fillDemo = () => {
+    const mk = (value: any, unit: string) => ({ value: String(value), unit, sqm: toSqm(String(value), unit) });
+    setKind('new');
+    setPropertyType('Apartment / Flat');
+    setDepartment('Survey Department');
+    setTargets({ parcel: '', building: '', floor: '', unit: '' });
+    setExisting(null); setDups([]); setAiWarn([]);
+    setP({
+      state: 'Delhi', district: 'South West Delhi', tehsil: 'Dwarka', city: 'New Delhi',
+      ward: '12', locality: 'Saket', society: 'Green Residency Tower B01',
+      street: 'Press Enclave Road', pin: '110017', landmark: 'Near Saket Metro',
+      country: 'India', coord_system: 'WGS84', coord_source: 'GNSS',
+      coord_accuracy: '0.5', survey_date: '2026-09-10',
+      property_name: 'Green Residency — A804',
+      survey_number: 'SY-0182', subdivision_number: 'SD-04', plot_number: '182',
+      tower: 'B01', usage: 'Residential',
+      parcel_id: 'DL-SKT-0182', land_use: 'Residential', boundary_source: 'Survey',
+      building_name: 'Green Residency B01', building_id: 'B01', building_type: 'Residential',
+      num_floors: '12', basements: '2', construction_year: '2021',
+      approval_ref: 'MCD/2020/1842', completion: 'Occupied',
+      floor_number: '8', floor_usage: 'Residential', floor_plan: 'Yes',
+      unit_number: 'A804', unit_type: '2BHK',
+      latitude: '28.5245', longitude: '77.2010',
+      length_m: '12.5', width_m: '9.2', height_m: '3.1',
+      building_height_m: '36.6', floor_height_m: '3.1',
+      ground_elev_m: '216.5', z_min: '24.8', z_max: '27.9',
+      elev_source: 'GNSS',
+      owner_name: 'Aarav Sharma (Demo)', owner_reference: 'OWN-DEMO-804',
+      ownership_type: 'Freehold', right_type: 'Ownership',
+      reg_ref: 'DL-2021-88412', share: '100%', right_notes: 'Self-occupied demo record',
+    });
+    setMeas({
+      carpet_area: mk(1245, 'sq ft'),
+      builtup_area: mk(1450, 'sq ft'),
+      super_builtup_area: mk(1700, 'sq ft'),
+      unit_area: mk(1245, 'sq ft'),
+      common_area: mk(200, 'sq ft'),
+      parking_area: mk(120, 'sq ft'),
+    });
+    setDeclared(true);
+    setToast('Demo data filled — click Continue through the steps to showcase');
+  };
 
   // resume a draft / correction version
   useEffect(() => {
@@ -286,7 +343,10 @@ export function SubmitWizard() {
     <div className="p-5 max-w-[900px] mx-auto space-y-4">
       <PageHeader title={sid ? `Submission ${sid}` : 'New Property Submission'}
         sub={govtMode ? 'Authorized department source — automatic validation, no citizen queue.' : 'Owner submission — human verification required before it becomes cadastral data.'}
-        actions={<button onClick={() => saveDraft(false)} className="btn-ghost flex items-center gap-1.5 text-xs"><Save size={13} />Save Draft</button>} />
+        actions={<div className="flex gap-2">
+          <button onClick={fillDemo} title="Fill the whole form with demo data for showcase" className="btn-primary flex items-center gap-1.5 text-xs !bg-gov-saffron !border-gov-saffron hover:!bg-gov-saffronDark"><Sparkles size={13} />Fill demo data</button>
+          <button onClick={() => saveDraft(false)} className="btn-ghost flex items-center gap-1.5 text-xs"><Save size={13} />Save Draft</button>
+        </div>} />
       {/* progress */}
       <div className="flex items-center gap-1 flex-wrap">
         {WIZARD_STEPS.map((t, i) => (

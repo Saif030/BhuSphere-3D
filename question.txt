@@ -1,0 +1,57 @@
+# Potential Hackathon Q&A Questions - BhuSphere 3D
+
+## Technical Questions
+
+**Q: What is the core problem you're solving?**
+A: We're addressing the limitation of current 2D cadastral systems that don't capture vertical property rights. BhuSphere 3D extends conventional 2D parcel records into vertically structured property identities, enabling proper 3D land administration for apartments, basements, and underground utilities.
+
+**Q: How does your 3D ULPIN system work?**
+A: Our prototype 3D ULPIN system follows the pattern DL-{District}-{Local}-{Parcel}-{Building}-{Floor}-{Unit} (e.g., DL-SKT-0182-B01-F08-U804). Each unit gets a unique 3D identifier that captures its vertical position within a building, with confidence scores based on data source reconciliation.
+
+**Q: What data sources do you integrate?**
+A: We integrate 7 key data sources: GIS cadastral maps, LiDAR point clouds, drone imagery, GNSS survey data, floor plans, digital elevation models (DEM), and property registry records. Our validation engine cross-references these to compute confidence scores.
+
+**Q: How do you handle data validation?**
+A: Our validation engine runs 12 automated checks including parcel overlap detection, building-boundary verification, floor overlap analysis, height mismatch detection (>2m threshold), utility crossing detection, and ownership completeness checks. Each issue is scored with severity and AI confidence levels.
+
+**Q: Is this using real AI/LLMs?**
+A: In this prototype, our AI copilot uses deterministic rule-based analysis for safety and reliability. We've architected it to support future LLM integration via LangGraph with pgvector RAG over approval documents, but the current implementation ensures no external API dependencies for demo reliability.
+
+## Implementation Questions
+
+**Q: What's your tech stack?**
+A: Frontend: React 18 + TypeScript + Vite + Tailwind + MapLibre (2D) + Three.js (3D). Backend: FastAPI + SQLAlchemy + SQLite (demo) with PostGIS-ready architecture. We use procedural 3D generation for the demo, with a clear path to Cesium Ion + 3D Tiles for production.
+
+**Q: How does the citizen submission workflow work?**
+A: Citizens can submit property data through a 7-step wizard with map-based parcel selection, automatic area conversion (sq.ft to sq.m), document uploads, and duplicate detection. Officers review submissions in a queue, can request field verification, and approved submissions integrate into the live cadastral database with full audit trails.
+
+**Q: What makes your 3D visualization unique?**
+A: Our 3D viewer features exploded floor views for individual unit inspection, underground utility tube visualization, vertical floor lists with z-range information, and interactive unit selection. The system is designed to swap procedural generation for Cesium 3D Tiles in production for real city-scale rendering.
+
+**Q: How do you ensure data security and auditability?**
+A: Every action is logged in our audit trail system. We implement role-based access control (officer, surveyor, admin, citizen, public), and property history is tracked from 2024-2026 with full provenance. Our QR-based public identity page exposes only non-sensitive reference data.
+
+## Impact & Scalability Questions
+
+**Q: What's the real-world impact of this solution?**
+A: BhuSphere 3D enables accurate property tax assessment based on vertical space usage, reduces land disputes through precise 3D boundaries, improves urban planning with underground utility mapping, and supports digital transformation of land administration aligned with India's Digital India Land Records Modernization Programme.
+
+**Q: How scalable is this solution?**
+A: Our architecture is PostGIS-ready for production deployment, designed to handle city-scale datasets with 3D Tiles streaming. The modular backend supports integration with existing systems like Bhu-Naksha, and our API-first design enables easy integration with government portals.
+
+**Q: What are your next steps beyond this prototype?**
+A: We plan to implement PostGIS with pgvector for spatial queries, integrate Cesium Ion for real 3D city models, add Keycloak for enterprise authentication, implement CityGML/LADM standards compliance, and enhance the AI copilot with RAG over historical approval documents.
+
+**Q: How does this align with government standards?**
+A: Our system aligns with India's ULPIN (Unique Land Parcel Identification Number) initiative and extends it to 3D. We follow LADM (Land Administration Domain Model) principles and are designed to integrate with existing state land record systems while adding the missing vertical dimension.
+
+## Demo-Specific Questions
+
+**Q: What are the demo credentials?**
+A: Officer/demo123, Surveyor/demo123, Admin/demo123, Citizen/demo123, Public/demo123. Each role has appropriate permissions for the workflow demonstration.
+
+**Q: Is the demo data real?**
+A: No, all data is deterministically generated synthetic data for demonstration purposes. All ULPIN identifiers are prototype labels (e.g., DL-SKT-0182-B01-F08-U804) and NOT official Government of India ULPINs. Owner names are fictional. This is explicitly disclosed throughout the application.
+
+**Q: What's the flagship demo scenario?**
+A: Our Green Residency scenario demonstrates the complete workflow: dashboard KPIs → map search → Building A → 3D exploded view → unit 804 inspection → confidence analysis → AI copilot queries → underground utility visualization → validation case resolution → audit trail → QR public identity.

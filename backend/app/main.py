@@ -504,12 +504,44 @@ def verification_queue(status: str = "", priority: str = "",
     if priority: q = q.filter(models.Submission.priority == priority)
     return [_sub_out(s) for s in q.order_by(models.Submission.created_at).limit(200).all()]
 
+def _is_field_assignee(db: Session, sid: str, username: str) -> bool:
+    return db.query(models.FieldVerification).filter(
+        models.FieldVerification.submission_id == sid,
+        models.FieldVerification.assignee == username).first() is not None
+
+def _has_any_field_visit(db: Session, sid: str) -> bool:
+    return db.query(models.FieldVerification).filter(
+        models.FieldVerification.submission_id == sid).first() is not None
+
 def _get_owned(sid: str, db: Session, u: dict):
     s = db.query(models.Submission).filter(models.Submission.submission_id == sid).first()
     if not s: raise HTTPException(404, "Submission not found")
-    if u["role"] not in OFFICER_ROLES and s.submitter != u["username"]:
-        raise HTTPException(403, "Not your submission")
-    return s
+    if u["role"] in OFFICER_ROLES:
+        return s
+    if s.submitter == u["username"]:
+        return s
+    # Surveyor may view any submission that has a field visit (open pool + claim model).
+    # Strict per-assignee check broke the demo when officers typed a different name.
+    if u["role"] in GOVT_ROLES and _has_any_field_visit(db, sid):
+        return s
+    if u["role"] in GOVT_ROLES and _is_field_assignee(db, sid, u["username"]):
+        return s
+    raise HTTPException(403, "Not your submission")
+
+def _fv_out(fv, db: Session | None = None, me: str | None = None):
+    out = {"verification_id": fv.verification_id, "submission_id": fv.submission_id,
+           "assignee": fv.assignee, "reason": fv.reason, "scheduled": fv.scheduled,
+           "checklist": fv.checklist or [], "observed": fv.observed or {},
+           "recommendation": fv.recommendation, "status": fv.status,
+           "created_at": str(fv.created_at)}
+    if me is not None:
+        out["mine"] = (fv.assignee == me)
+    if db is not None:
+        s = db.query(models.Submission).filter(
+            models.Submission.submission_id == fv.submission_id).first()
+        if s:
+            out["submission"] = _sub_out(s)
+    return out
 
 @app.get("/api/submissions/{sid}")
 def get_submission(sid: str, db: Session = Depends(get_db),
@@ -582,7 +614,7 @@ def submit_submission(sid: str, db: Session = Depends(get_db),
                                   timestamp="2026-09-09"))
     db.commit()
     audit(db, u["username"], u["role"], "Submission", sid, "submitted")
-    for officer in ("officer", "admin", "surveyor"):
+    for officer in ("officer", "admin"):
         subsvc.notify(db, officer, "New submission requires verification",
                       f"{sid} · {s.property_type} by {u['username']}.", "/submit/queue")
     subsvc.notify(db, u["username"], "Submission received",
@@ -674,8 +706,10 @@ def create_field_verification(sid: str, b: FieldIn, db: Session = Depends(get_db
                       "Building exists", "Floor exists", "Unit exists", "Measurements verified",
                       "Coordinates checked", "Documents checked", "Photographs collected"]
     checks = b.checklist or [{"item": c, "done": False} for c in default_checks]
+    # Default to the demo surveyor account so the visit always lands in Field Work.
+    raw_assignee = (b.assignee or "").strip() or "surveyor"
     fv = models.FieldVerification(verification_id=subsvc.next_fv_id(db), submission_id=sid,
-                                  assignee=b.assignee or None, reason=b.reason,
+                                  assignee=raw_assignee, reason=b.reason,
                                   scheduled=b.scheduled or None, checklist=checks, status="Open")
     db.add(fv)
     s.status = "FIELD_CHECK"
@@ -683,7 +717,8 @@ def create_field_verification(sid: str, b: FieldIn, db: Session = Depends(get_db
     audit(db, u["username"], u["role"], "Submission", sid, "field-request", new={"fv": fv.verification_id})
     if fv.assignee:
         subsvc.notify(db, fv.assignee, "Field verification assigned",
-                      f"{fv.verification_id} for {sid}.", f"/submit/track/{sid}")
+                      f"{fv.verification_id} for {sid}: {b.reason or 'site visit required'}.",
+                      f"/field-work/{fv.verification_id}")
     return {"verification_id": fv.verification_id, "status": fv.status, "checklist": checks}
 
 class FieldResultIn(BaseModel):
@@ -692,12 +727,50 @@ class FieldResultIn(BaseModel):
     recommendation: str = ""  # APPROVE | REJECT | REQUEST_CORRECTION
     notes: str = ""
 
+@app.get("/api/field-verification/assigned")
+def assigned_field_verifications(status: str = "", mine: str = "", db: Session = Depends(get_db),
+                                 u: dict = Depends(require_roles(*GOVT_ROLES))):
+    """Worklist: surveyors see the whole open pool (mine first) so a mistyped
+    assignee never hides work. Officers/admins see all. ?mine=1 filters to own only."""
+    q = db.query(models.FieldVerification).order_by(models.FieldVerification.created_at.desc())
+    if status:
+        q = q.filter(models.FieldVerification.status == status)
+    rows = q.limit(200).all()
+    if u["role"] == "surveyor" and mine == "1":
+        rows = [r for r in rows if r.assignee == u["username"]]
+    # mine-first ordering for surveyors
+    if u["role"] == "surveyor":
+        rows = sorted(rows, key=lambda r: (r.assignee != u["username"], r.status != "Open"))
+    return [_fv_out(fv, db, me=u["username"]) for fv in rows]
+
+@app.get("/api/field-verification/{fvid}")
+def get_field_verification(fvid: str, db: Session = Depends(get_db),
+                           u: dict = Depends(require_roles(*GOVT_ROLES))):
+    fv = db.query(models.FieldVerification).filter(
+        models.FieldVerification.verification_id == fvid).first()
+    if not fv: raise HTTPException(404, "Field verification not found")
+    # Pool model: any surveyor/officer can open any visit (claim on submit).
+    s = db.query(models.Submission).filter(
+        models.Submission.submission_id == fv.submission_id).first()
+    docs = db.query(models.SubmissionDocument).filter(
+        models.SubmissionDocument.submission_id == fv.submission_id).all() if s else []
+    return {**_fv_out(fv, db),
+            "documents": [{"id": d.id, "doc_type": d.doc_type, "doc_number": d.doc_number,
+                           "doc_date": d.doc_date, "authority": d.authority,
+                           "description": d.description, "filename": d.filename,
+                           "mime": d.mime, "size": d.size} for d in docs]}
+
 @app.post("/api/field-verification/{fvid}/result")
 def field_result(fvid: str, b: FieldResultIn, db: Session = Depends(get_db),
                  u: dict = Depends(require_roles(*GOVT_ROLES))):
     fv = db.query(models.FieldVerification).filter(
         models.FieldVerification.verification_id == fvid).first()
     if not fv: raise HTTPException(404, "Field verification not found")
+    # Pool model: any surveyor can complete any open visit; auto-claim it.
+    if u["role"] == "surveyor" and fv.assignee != u["username"]:
+        fv.assignee = u["username"]
+    if fv.status == "Completed":
+        raise HTTPException(409, "Field verification already completed")
     if b.recommendation not in ("APPROVE", "REJECT", "REQUEST_CORRECTION"):
         raise HTTPException(422, "Recommendation must be APPROVE, REJECT or REQUEST_CORRECTION")
     fv.observed, fv.checklist, fv.recommendation, fv.status = \
@@ -717,6 +790,10 @@ def field_result(fvid: str, b: FieldResultIn, db: Session = Depends(get_db),
             s.status = "UNDER_VERIFICATION"
         subsvc.notify(db, s.submitter, "Field verification completed",
                       f"{fvid}: {b.recommendation}. {b.notes}", f"/submit/track/{s.submission_id}")
+        for officer in ("officer", "admin"):
+            subsvc.notify(db, officer, "Field result ready for decision",
+                          f"{fvid} ({s.submission_id}): {b.recommendation} by {u['username']}.",
+                          f"/submit/verify/{s.submission_id}")
     db.commit()
     audit(db, u["username"], u["role"], "FieldVerification", fvid, "completed",
           new={"recommendation": b.recommendation})
@@ -789,7 +866,8 @@ def submission_history(sid: str, db: Session = Depends(get_db),
                          "at": str(r.created_at)} for r in reviews],
             "versions": [{"version": v.version, "note": v.note, "at": str(v.created_at)} for v in versions],
             "field_verifications": [{"verification_id": f.verification_id, "status": f.status,
-                                     "recommendation": f.recommendation} for f in fvs],
+                                     "recommendation": f.recommendation, "assignee": f.assignee,
+                                     "reason": f.reason, "scheduled": f.scheduled} for f in fvs],
             "audit": [{"user": a.user_id, "action": a.action, "time": str(a.timestamp)} for a in trail]}
 
 @app.get("/api/notifications")

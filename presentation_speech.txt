@@ -1,0 +1,117 @@
+# BhuSphere 3D - Hackathon Presentation Script
+
+## Opening (30 seconds)
+
+"Good morning/afternoon everyone. I'm here to present BhuSphere 3D - a solution for 3D Cadastral Intelligence and Vertical Property Mapping.
+
+Imagine trying to manage property rights in a city like Mumbai or Delhi with only 2D maps. How do you tax the 20th floor differently from the ground floor? How do you resolve disputes when basements overlap? How do you plan underground utilities when you can't see them?
+
+Current cadastral systems are fundamentally 2D, but our cities are fundamentally 3D. BhuSphere 3D bridges this gap by extending conventional land records into vertically structured property intelligence."
+
+## Problem Statement (45 seconds)
+
+"We're addressing SIH Problem Statement 26011 - 3D ULPIN Generation and Vertical Property Mapping.
+
+The core challenges we're solving:
+- 2D parcel maps can't represent vertical property rights for apartments, basements, and underground infrastructure
+- Property tax assessment lacks precision for multi-story buildings
+- Land disputes arise from unclear vertical boundaries
+- Urban planning suffers from incomplete underground utility mapping
+- No standardized 3D property identification system exists
+
+Our solution transforms flat cadastral maps into intelligent 3D digital twins of our cities."
+
+## Solution Overview (1 minute)
+
+"BhuSphere 3D is an interoperable 3D cadastral platform that integrates seven critical data sources:
+- GIS cadastral maps
+- LiDAR point clouds  
+- Drone imagery
+- GNSS survey data
+- Floor plans
+- Digital elevation models
+- Property registry records
+
+Our validation engine cross-references these sources to compute confidence scores for each property unit, flagging discrepancies like height mismatches or overlapping boundaries.
+
+The system generates prototype 3D ULPINs - unique identifiers that capture vertical position, like DL-SKT-0182-B01-F08-U804, representing a specific unit on floor 8 of building 1."
+
+## Technical Architecture (45 seconds)
+
+"Our tech stack is modern and production-ready:
+- Frontend: React 18 + TypeScript with MapLibre for 2D mapping and Three.js for 3D visualization
+- Backend: FastAPI with SQLAlchemy, currently running on SQLite for demo but PostGIS-ready for production
+- Spatial database architecture supporting both 2D parcels and 3D volumetric data
+- AI copilot using deterministic rules for reliable analysis, with architecture for future LLM integration
+
+The system is API-first, making it easy to integrate with existing government land record systems."
+
+## Key Features (1 minute)
+
+"Let me highlight our standout features:
+
+**3D Property Visualization**: Interactive building models with exploded floor views, underground utility tubes, and unit-level inspection with z-range information.
+
+**Intelligent Validation**: 12 automated checks including parcel overlap detection, height mismatch analysis, and utility crossing detection. Each issue is scored with severity and confidence levels.
+
+**Citizen Submission Portal**: A 7-step wizard allowing citizens to submit property data with map-based selection, automatic area conversion, and duplicate detection.
+
+**AI Copilot**: Natural language interface for querying property data, identifying conflicts, and explaining validation results - all with safety guardrails and official verification requirements.
+
+**Complete Audit Trail**: Every action is logged with role-based access control, supporting transparency and accountability."
+
+## Demo Walkthrough (1.5 minutes)
+
+"I'd like to walk you through our flagship demo scenario at Green Residency:
+
+Starting at our dashboard, we see city-scale KPIs showing over 12,000 parcels, 3,400 buildings, and 18,000 units with 94.2% overall verification.
+
+I search for 'Green Residency' on our 2D map and select Building A. Clicking 'Open 3D View' launches our interactive building model. I can see floors from basement B2 up to floor 12, each color-coded by verification status.
+
+I explode floor 8 to inspect individual units and select unit 804. The system shows its 3D ULPIN, area of 1,245 square feet, elevation range of 24-27 meters, and confidence score of 96.4%.
+
+Using our AI copilot, I ask 'Why is apartment A804 marked 96.4%?' and it explains the evidence reconciliation across our seven data sources. I then query 'Show buildings with height mismatch greater than 2 meters' and the map highlights affected properties.
+
+Switching to underground mode, I visualize water, electrical, and telecom utility tubes intersecting with property boundaries.
+
+In our validation center, I review a case where registered height shows 29.4m but LiDAR data shows 32.8m - a 3.4m discrepancy that needs field verification.
+
+The complete history from 2024 to 2026 shows all changes, and our QR code feature provides public identity pages with non-sensitive reference data."
+
+## Impact & Scalability (45 seconds)
+
+"The real-world impact is significant:
+- More accurate property tax assessment based on actual vertical space usage
+- Reduced land disputes through precise 3D boundary representation  
+- Improved urban planning with complete underground utility mapping
+- Digital transformation aligned with India's Digital India Land Records Modernization Programme
+
+Our architecture is designed for city-scale deployment with PostGIS, Cesium Ion for 3D Tiles streaming, and integration with existing systems like Bhu-Naksha. We follow LADM standards and are ready for production deployment."
+
+## Future Roadmap (30 seconds)
+
+"Our next steps include:
+- PostGIS implementation with pgvector for advanced spatial queries
+- Cesium Ion integration for real 3D city models
+- Keycloak for enterprise authentication
+- CityGML/LADM standards compliance
+- Enhanced AI copilot with RAG over historical approval documents
+
+We're not just building a demo - we're architecting a production-ready solution for India's 3D cadastral future."
+
+## Closing (30 seconds)
+
+"BhuSphere 3D transforms how we think about land administration - from 2D parcels to 3D property intelligence. We're making vertical property rights visible, verifiable, and manageable.
+
+Thank you for your time. I'm happy to answer any questions about our technical implementation, data validation approach, or integration plans."
+
+## Backup Q&A Preparation
+
+"If you have questions about:
+- Our validation methodology and confidence scoring
+- The citizen submission workflow and officer review process  
+- How we handle data security and privacy
+- Our integration path with existing government systems
+- The technical details of our 3D visualization
+
+I'd be happy to go deeper into any of these areas."
