@@ -15,8 +15,8 @@ describe('demo tour script', () => {
       expect(s.text.length).toBeGreaterThan(20);
     }
   });
-  it('opens on the dashboard and finales on the B03 case file', () => {
-    expect(TOUR_STEPS[0].route).toBe('/');
+  it('opens on the staff dashboard and finales on the B03 case file', () => {
+    expect(TOUR_STEPS[0].route).toBe('/dashboard');
     expect(TOUR_STEPS[TOUR_STEPS.length - 1].route).toBe('/validation/case/DL-SKT-0182-B03');
   });
   it('deep-links carry building/floor/unit params into the 3D viewer', () => {

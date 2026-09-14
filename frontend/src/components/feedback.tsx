@@ -7,11 +7,11 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
   render() {
     if (this.state.err)
       return (
-        <div className="min-h-screen flex items-center justify-center bg-night-950 p-6">
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
           <div className="panel-pad max-w-md text-sm">
-            <div className="font-bold text-lg text-white mb-1">Something went wrong</div>
+            <div className="font-bold text-lg text-slate-900 mb-1">Something went wrong</div>
             <div className="text-slate-500 text-xs mb-3 font-mono">{this.state.err}</div>
-            <button onClick={() => { this.setState({ err: null }); window.location.href = '/'; }} className="btn-primary">Back to dashboard</button>
+            <button onClick={() => { this.setState({ err: null }); window.location.href = '/'; }} className="btn-primary">Back to home</button>
           </div>
         </div>
       );
@@ -20,11 +20,11 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
 }
 
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse bg-white/[0.07] rounded ${className}`} />;
+  return <div className={`animate-pulse bg-slate-200 rounded ${className}`} />;
 }
 
 export function Empty({ text }: { text: string }) {
-  return <div className="text-slate-400 text-xs bg-white/[0.03] border border-dashed border-white/15 rounded-lg p-3">{text}</div>;
+  return <div className="text-slate-500 text-xs bg-slate-50 border border-dashed border-slate-300 rounded-lg p-3">{text}</div>;
 }
 
 export function PageHeader({ title, sub, actions }: { title: string; sub?: string; actions?: React.ReactNode }) {

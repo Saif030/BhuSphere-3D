@@ -57,19 +57,19 @@ export default function DemoTour({ onCopilot }: { onCopilot: () => void }) {
   const s = TOUR_STEPS[tour];
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[70] w-[460px] max-w-[93vw]">
-      <div className="panel p-4 !border-accent-400/50 shadow-panel">
+      <div className="panel p-4 !border-gov-saffron shadow-panel">
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="flex items-center gap-1 text-[10px] font-bold text-night-950 bg-accent-400 rounded-full px-2 py-0.5">
+          <span className="flex items-center gap-1 text-[10px] font-bold text-white bg-gov-saffron rounded-full px-2 py-0.5">
             <Presentation size={11} />GUIDED DEMO</span>
           <div className="flex gap-1 ml-1">{TOUR_STEPS.map((_, j) => (
-            <span key={j} className={`h-1.5 rounded-full transition-all ${j === tour ? 'w-5 bg-accent-400' : j < tour ? 'w-1.5 bg-accent-400/60' : 'w-1.5 bg-white/15'}`} />))}</div>
+            <span key={j} className={`h-1.5 rounded-full transition-all ${j === tour ? 'w-5 bg-gov-saffron' : j < tour ? 'w-1.5 bg-gov-saffron/60' : 'w-1.5 bg-slate-200'}`} />))}</div>
           <span className="ml-auto text-[11px] text-slate-500">{tour + 1}/{TOUR_STEPS.length}</span>
           <button onClick={() => setAuto(a => !a)} title={auto ? 'Pause auto-play' : 'Auto-play (9s/step)'}
-            className="text-slate-400 hover:text-white p-1" aria-label="Toggle auto-play">
+            className="text-slate-400 hover:text-slate-900 p-1" aria-label="Toggle auto-play">
             {auto ? <Pause size={14} /> : <Play size={14} />}</button>
-          <button onClick={() => setTour(null)} className="text-slate-400 hover:text-white p-1" aria-label="End tour"><X size={14} /></button>
+          <button onClick={() => setTour(null)} className="text-slate-400 hover:text-slate-900 p-1" aria-label="End tour"><X size={14} /></button>
         </div>
-        <div className="font-bold text-white text-sm">{s.title}</div>
+        <div className="font-bold text-slate-900 text-sm">{s.title}</div>
         <div className="text-xs text-slate-400 mt-0.5">{s.text}</div>
         <div className="flex gap-2 mt-3">
           <button disabled={tour === 0} onClick={() => setTour(tour - 1)}
@@ -77,7 +77,7 @@ export default function DemoTour({ onCopilot }: { onCopilot: () => void }) {
           {tour < TOUR_STEPS.length - 1
             ? <button onClick={() => setTour(tour + 1)} className="btn-primary !text-xs flex items-center gap-1">Next<ChevronRight size={13} /></button>
             : <button onClick={() => setTour(null)} className="btn-primary !text-xs">Finish tour</button>}
-          <button onClick={() => setTour(null)} className="ml-auto text-[11px] text-slate-500 hover:text-slate-300 underline underline-offset-2">Skip tour</button>
+          <button onClick={() => setTour(null)} className="ml-auto text-[11px] text-slate-500 hover:text-slate-700 underline underline-offset-2">Skip tour</button>
         </div>
       </div>
     </div>

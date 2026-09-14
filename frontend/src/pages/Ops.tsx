@@ -42,15 +42,15 @@ export function ValidationPage() {
       <div className="grid md:grid-cols-2 gap-3" data-tour="tour-validation">
         {view.map((i: any) => (
           <div key={i.id} className={`panel p-4 text-sm border-l-2 ${i.severity === 'High' ? '!border-l-red-400' : i.severity === 'Medium' ? '!border-l-amber-400' : '!border-l-sky-400'}`}>
-            <div className="flex gap-2 items-center flex-wrap"><b className="text-white">{i.type}</b><StatusBadge s={i.severity} /><StatusBadge s={i.status} />
+            <div className="flex gap-2 items-center flex-wrap"><b className="text-slate-900">{i.type}</b><StatusBadge s={i.severity} /><StatusBadge s={i.status} />
               <span className="ml-auto text-[11px] text-slate-500">AI {i.confidence}%</span></div>
             <div className="text-xs text-slate-500 font-mono mt-1">{i.entity_type}: {i.entity}</div>
-            <div className="text-xs text-slate-300 mt-1.5">{i.description}</div>
+            <div className="text-xs text-slate-600 mt-1.5">{i.description}</div>
             <div className="text-[11px] text-slate-500 mt-1">Evidence: {(i.evidence || []).join(', ')}</div>
-            <div className="text-[11px] text-accent-300 mt-1">→ {i.action}</div>
+            <div className="text-[11px] text-gov-navy mt-1">→ {i.action}</div>
             <div className="flex gap-1.5 mt-2.5 flex-wrap">
-              {entityLink(i.entity) && <Link to={entityLink(i.entity)!} className="text-[11px] font-semibold bg-accent-400 text-night-950 rounded-md px-2.5 py-1">Open in 3D</Link>}
-              <Link to={`/validation/case/${i.entity}`} className="text-[11px] font-semibold border border-white/15 text-slate-200 rounded-md px-2.5 py-1 hover:bg-white/5">Case file →</Link>
+              {entityLink(i.entity) && <Link to={entityLink(i.entity)!} className="text-[11px] font-semibold bg-gov-navy text-white rounded-md px-2.5 py-1">Open in 3D</Link>}
+              <Link to={`/validation/case/${i.entity}`} className="text-[11px] font-semibold border border-slate-200 text-slate-700 rounded-md px-2.5 py-1 hover:bg-slate-100">Case file →</Link>
               {['Under Review', 'Resolved', 'Rejected'].map(s =>
                 <button key={s} className="btn-ghost !text-[11px] !py-1" onClick={() => review(i.id, s)}>{s}</button>)}
             </div>
@@ -82,43 +82,43 @@ export function ValidationCase() {
   if (isError || !data) return (
     <div className="p-6 text-sm max-w-xl mx-auto text-center">
       <FileWarning size={26} className="text-slate-600 mx-auto mb-2" />
-      <div className="font-bold text-white text-lg">No case file for this entity</div>
+      <div className="font-bold text-slate-900 text-lg">No case file for this entity</div>
       <Link to="/validation" className="btn-primary inline-block mt-4">Back to Validation Center</Link>
     </div>);
   const s = data.snapshot || {};
   const maxH = Math.max(s.registered_height_m || 0, s.lidar_height_m || 0, 1);
   const bar = (v: number, cls: string) => (
     <div className="flex items-center gap-2 text-xs">
-      <div className="flex-1 h-4 bg-white/[0.06] rounded-md overflow-hidden">
+      <div className="flex-1 h-4 bg-slate-100 rounded-md overflow-hidden">
         <div className={`h-full rounded-md ${cls}`} style={{ width: `${Math.max(4, (v / maxH) * 100)}%` }} /></div>
-      <span className="w-16 text-right font-mono text-slate-200">{v.toFixed(1)} m</span>
+      <span className="w-16 text-right font-mono text-slate-700">{v.toFixed(1)} m</span>
     </div>);
   return (
     <div className="p-5 space-y-4 max-w-[1000px] mx-auto" data-tour="tour-case">
-      <Link to="/validation" className="text-xs text-accent-400 flex items-center gap-1 w-fit"><ArrowLeft size={13} />Validation Center</Link>
+      <Link to="/validation" className="text-xs text-gov-navy flex items-center gap-1 w-fit"><ArrowLeft size={13} />Validation Center</Link>
       <PageHeader title="Case file" sub="One entity, full evidence story — snapshot, measurements, history, audit"
         actions={entityLink(data.entity) ? <Link to={entityLink(data.entity)!} className="btn-primary !py-1.5">Open in 3D →</Link> : undefined} />
       <div className="panel-pad">
-        <div className="font-mono font-bold text-accent-300">{data.entity}</div>
+        <div className="font-mono font-bold text-gov-navy">{data.entity}</div>
         <div className="text-xs text-slate-400 mt-0.5">{s.name || s.kind} {s.parcel ? `· Parcel ${s.parcel}` : ''}</div>
         {s.kind === 'building' && (
           <div className="mt-3 space-y-1.5">
             <div className="text-[11px] text-slate-500">Registered height</div>{bar(s.registered_height_m, 'bg-sky-400')}
             <div className="text-[11px] text-slate-500">LiDAR-derived height</div>{bar(s.lidar_height_m, 'bg-red-400')}
-            <div className="text-xs mt-1">Difference: <b className="text-red-300 font-mono">+{s.difference_m} m</b>
+            <div className="text-xs mt-1">Difference: <b className="text-red-700 font-mono">+{s.difference_m} m</b>
               <span className="text-slate-500"> · {s.floors} floors · {s.confidence}% · </span><StatusBadge s={s.status} /></div>
           </div>)}
       </div>
       <div className="space-y-2.5">
-        <div className="text-sm font-bold text-white">Findings ({data.issues.length})</div>
+        <div className="text-sm font-bold text-slate-900">Findings ({data.issues.length})</div>
         {data.issues.map((i: any) => (
           <div key={i.id} className="panel p-4 text-sm">
-            <div className="flex gap-2 items-center flex-wrap"><b className="text-white">{i.type}</b>
+            <div className="flex gap-2 items-center flex-wrap"><b className="text-slate-900">{i.type}</b>
               <StatusBadge s={i.severity} /><StatusBadge s={i.status} />
               <span className="ml-auto text-[11px] text-slate-500">AI {i.confidence}%</span></div>
-            <div className="text-xs text-slate-300 mt-1.5">{i.description}</div>
+            <div className="text-xs text-slate-600 mt-1.5">{i.description}</div>
             <div className="text-[11px] text-slate-500 mt-1">Evidence: {(i.evidence || []).join(', ')}</div>
-            <div className="text-[11px] text-accent-300 mt-1">→ {i.action}</div>
+            <div className="text-[11px] text-gov-navy mt-1">→ {i.action}</div>
             <div className="flex gap-1.5 mt-2.5">
               {['Under Review', 'Resolved', 'Rejected'].map(st =>
                 <button key={st} className="btn-ghost !text-[11px] !py-1" onClick={() => review(i.id, st)}>{st}</button>)}
@@ -126,14 +126,14 @@ export function ValidationCase() {
           </div>))}
       </div>
       {!!data.history?.length && (
-        <div className="panel-pad"><div className="font-semibold text-sm text-white mb-2">History</div>
+        <div className="panel-pad"><div className="font-semibold text-sm text-slate-900 mb-2">History</div>
           <div className="text-xs space-y-2">{data.history.map((h: any, j: number) => (
-            <div key={j} className="flex gap-2.5"><div className="w-2 h-2 rounded-full bg-accent-400 mt-1 shrink-0" />
-              <div className="text-slate-300"><b className="text-slate-100">{h.timestamp}</b> — {h.event}<div className="text-slate-500">{h.description}</div></div></div>))}
+            <div key={j} className="flex gap-2.5"><div className="w-2 h-2 rounded-full bg-gov-navy mt-1 shrink-0" />
+              <div className="text-slate-600"><b className="text-slate-800">{h.timestamp}</b> — {h.event}<div className="text-slate-500">{h.description}</div></div></div>))}
           </div></div>)}
-      <div className="panel-pad"><div className="font-semibold text-sm text-white mb-2">Live audit trail <span className="text-[11px] font-normal text-slate-500">(newest first — resolve above and watch it grow)</span></div>
+      <div className="panel-pad"><div className="font-semibold text-sm text-slate-900 mb-2">Live audit trail <span className="text-[11px] font-normal text-slate-500">(newest first — resolve above and watch it grow)</span></div>
         <div className="text-xs space-y-1">{(data.audit || []).map((a: any, j: number) => (
-          <div key={j} className="border-b border-white/5 py-1.5 text-slate-300 font-mono !text-[11px]">{a.time} · {a.user}({a.role}) · {a.action}</div>))}
+          <div key={j} className="border-b border-slate-200 py-1.5 text-slate-600 font-mono !text-[11px]">{a.time} · {a.user}({a.role}) · {a.action}</div>))}
           {!data.audit?.length && <div className="text-slate-500 text-xs">No audit rows yet for this entity — take an action above.</div>}
         </div></div>
     </div>
@@ -148,11 +148,11 @@ export function InfraPage() {
     <div className="p-5 space-y-4 max-w-[1400px] mx-auto">
       <PageHeader title="Underground Infrastructure" sub="Utility networks below the cadastre — depths, owners, affected parcels"
         actions={<div className="flex gap-1.5 flex-wrap">{['', 'Water', 'Electrical', 'Sewer', 'Telecom', 'Gas', 'Transport'].map(t =>
-          <button key={t} onClick={() => setF(t)} className={`text-xs border rounded-lg px-2.5 py-1.5 transition-colors ${f === t ? 'bg-accent-400 text-night-950 font-semibold border-accent-400' : 'border-white/15 text-slate-300 hover:bg-white/5'}`}>{t || 'All'}</button>)}</div>} />
+          <button key={t} onClick={() => setF(t)} className={`text-xs border rounded-lg px-2.5 py-1.5 transition-colors ${f === t ? 'bg-gov-navy text-white font-semibold border-accent-400' : 'border-slate-200 text-slate-600 hover:bg-slate-100'}`}>{t || 'All'}</button>)}</div>} />
       <div className="grid md:grid-cols-3 gap-2.5 text-sm">{list.map((u: any) =>
         <div key={u.utility_id} className="panel p-3.5">
           <div className="flex items-center gap-2"><span className={`w-2.5 h-2.5 rounded-full ${UCOLOR[u.type] || 'bg-slate-400'}`} />
-            <b className="text-white font-mono text-xs">{u.utility_id}</b><span className="text-xs text-slate-400">{u.type}</span>
+            <b className="text-slate-900 font-mono text-xs">{u.utility_id}</b><span className="text-xs text-slate-400">{u.type}</span>
             <StatusBadge s={u.status} /></div>
           <div className="text-xs text-slate-500 mt-1.5">Depth {u.depth_m}m · {u.owner} · {u.year}</div>
           <div className="text-[11px] text-slate-400 mt-0.5">Parcels: {(u.parcels || []).join(', ') || '—'}</div></div>)}</div>
@@ -202,13 +202,13 @@ export function ReportsPage() {
     <div className="p-5 space-y-4 text-sm max-w-[1000px] mx-auto">
       <PageHeader title="Reports" sub="Officer-grade property, evidence and validation reports" />
       <div className="panel-pad flex flex-wrap gap-3 items-end">
-        <div><label className="text-xs font-medium text-slate-300">Report type</label><br />
+        <div><label className="text-xs font-medium text-slate-600">Report type</label><br />
           <select value={kind} onChange={e => { setKind(e.target.value as any); setOut(null); }} className="select mt-1">
             <option value="property">Property identity report</option>
             <option value="evidence">Evidence pack</option>
             <option value="validation">Validation summary</option>
           </select></div>
-        {kind !== 'validation' && <div className="flex-1 min-w-[220px]"><label className="text-xs font-medium text-slate-300">Prototype 3D ULPIN</label><br />
+        {kind !== 'validation' && <div className="flex-1 min-w-[220px]"><label className="text-xs font-medium text-slate-600">Prototype 3D ULPIN</label><br />
           <input value={ulpin} onChange={e => setUlpin(e.target.value.toUpperCase())} className="input mt-1 w-full font-mono !text-xs" /></div>}
         <button onClick={generate} disabled={busy} className="btn-primary">{busy ? 'Generating…' : 'Generate'}</button>
         {out && <button onClick={() => window.print()} className="btn-ghost">Print / PDF</button>}
@@ -216,37 +216,37 @@ export function ReportsPage() {
       </div>
       {!out && !busy && <Empty text="Pick a report type and click Generate. Property and evidence reports need a valid ULPIN." />}
       {out?.kind === 'property' && <div className="panel-pad space-y-2.5">
-        <div className="font-bold text-white text-base">Property Identity Report</div>
-        <div className="text-[11px] text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded-lg p-2.5">Prototype 3D cadastral reference — NOT an official Government of India ULPIN.</div>
-        <div className="font-mono font-bold text-accent-300">{out.u.prototype_ulpin}</div>
+        <div className="font-bold text-slate-900 text-base">Property Identity Report</div>
+        <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">Prototype 3D cadastral reference — NOT an official Government of India ULPIN.</div>
+        <div className="font-mono font-bold text-gov-navy">{out.u.prototype_ulpin}</div>
         <div className="grid grid-cols-2 gap-1 text-xs text-slate-400">
           {[['Parcel', out.u.parcel], ['Building', out.u.building_name], ['Floor', out.u.floor_label], ['Unit', out.u.unit],
             ['Area', out.u.area_sqft + ' sq.ft'], ['Vertical', `${out.u.z_min}–${out.u.z_max}m`],
             ['Status', out.u.verification_status], ['Confidence', out.u.confidence + '%'],
             ['Owner', out.u.owner?.display_name || '— missing'], ['Type', out.u.unit_type]].map(([k, v]) =>
-            <div key={k}>{k}: <span className="text-slate-100">{v}</span></div>)}
+            <div key={k}>{k}: <span className="text-slate-800">{v}</span></div>)}
         </div>
-        <div className="text-xs font-semibold text-white pt-2">Evidence ({out.s.length})</div>
-        <div className="text-xs space-y-1.5">{out.s.map((s: any, i: number) => <div key={i} className="border border-white/10 rounded-lg p-2 text-slate-200"><span className="text-emerald-400">✓</span> {s.type} — {s.name}<div className="text-slate-500">{s.date} · {s.resolution} · {s.provider} · score {s.score}</div></div>)}</div>
-        <div className="text-xs font-semibold text-white pt-2">History ({out.h.length})</div>
-        <div className="text-xs space-y-1 text-slate-300">{out.h.map((h: any, i: number) => <div key={i}><b className="text-slate-100">{h.timestamp}</b> — {h.event}: {h.description}</div>)}</div>
-        <div className="text-xs font-semibold text-white pt-2">Open validation ({out.v.length})</div>
-        <div className="text-xs space-y-1 text-slate-300">{out.v.length ? out.v.map((v: any, i: number) => <div key={i}><StatusBadge s={v.severity} /> {v.type} — {v.description}</div>) : <span className="text-slate-500">None.</span>}</div>
+        <div className="text-xs font-semibold text-slate-900 pt-2">Evidence ({out.s.length})</div>
+        <div className="text-xs space-y-1.5">{out.s.map((s: any, i: number) => <div key={i} className="border border-slate-200 rounded-lg p-2 text-slate-700"><span className="text-emerald-600">✓</span> {s.type} — {s.name}<div className="text-slate-500">{s.date} · {s.resolution} · {s.provider} · score {s.score}</div></div>)}</div>
+        <div className="text-xs font-semibold text-slate-900 pt-2">History ({out.h.length})</div>
+        <div className="text-xs space-y-1 text-slate-600">{out.h.map((h: any, i: number) => <div key={i}><b className="text-slate-800">{h.timestamp}</b> — {h.event}: {h.description}</div>)}</div>
+        <div className="text-xs font-semibold text-slate-900 pt-2">Open validation ({out.v.length})</div>
+        <div className="text-xs space-y-1 text-slate-600">{out.v.length ? out.v.map((v: any, i: number) => <div key={i}><StatusBadge s={v.severity} /> {v.type} — {v.description}</div>) : <span className="text-slate-500">None.</span>}</div>
       </div>}
       {out?.kind === 'evidence' && <div className="panel-pad space-y-2.5">
-        <div className="font-bold text-white text-base">Evidence Pack — <span className="font-mono text-accent-300">{out.u.prototype_ulpin}</span></div>
+        <div className="font-bold text-slate-900 text-base">Evidence Pack — <span className="font-mono text-gov-navy">{out.u.prototype_ulpin}</span></div>
         <div className="text-xs text-slate-400">Confidence {out.u.confidence}% · {out.u.verification_status}</div>
-        <div className="text-xs space-y-1.5">{out.s.map((s: any, i: number) => <div key={i} className="border border-white/10 rounded-lg p-2.5 text-slate-200">✓ <b>{s.type}</b> — {s.name}<div className="text-slate-500">Captured {s.date} · {s.resolution} · {s.provider} · contributes score {s.score}</div></div>)}</div>
-        <div className="text-xs font-semibold text-white pt-2">Chain of custody (history)</div>
-        <div className="text-xs space-y-1 text-slate-300">{out.h.map((h: any, i: number) => <div key={i}><b className="text-slate-100">{h.timestamp}</b> — {h.event}: {h.description}</div>)}</div>
+        <div className="text-xs space-y-1.5">{out.s.map((s: any, i: number) => <div key={i} className="border border-slate-200 rounded-lg p-2.5 text-slate-700">✓ <b>{s.type}</b> — {s.name}<div className="text-slate-500">Captured {s.date} · {s.resolution} · {s.provider} · contributes score {s.score}</div></div>)}</div>
+        <div className="text-xs font-semibold text-slate-900 pt-2">Chain of custody (history)</div>
+        <div className="text-xs space-y-1 text-slate-600">{out.h.map((h: any, i: number) => <div key={i}><b className="text-slate-800">{h.timestamp}</b> — {h.event}: {h.description}</div>)}</div>
       </div>}
       {out?.kind === 'validation' && <div className="panel-pad space-y-2.5">
-        <div className="font-bold text-white text-base">Validation Summary — {out.total} open issues</div>
+        <div className="font-bold text-slate-900 text-base">Validation Summary — {out.total} open issues</div>
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="bg-white/[0.04] border border-white/10 rounded-lg p-2.5 text-slate-300">By severity: {Object.entries(out.sev).map(([k, v]) => `${k} ${v}`).join(' · ')}</div>
-          <div className="bg-white/[0.04] border border-white/10 rounded-lg p-2.5 text-slate-300">By status: {Object.entries(out.st).map(([k, v]) => `${k} ${v}`).join(' · ')}</div>
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-600">By severity: {Object.entries(out.sev).map(([k, v]) => `${k} ${v}`).join(' · ')}</div>
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-600">By status: {Object.entries(out.st).map(([k, v]) => `${k} ${v}`).join(' · ')}</div>
         </div>
-        <div className="text-xs">{out.top.map((i: any) => <div key={i.id} className="border-b border-white/5 py-1.5 text-slate-300"><StatusBadge s={i.severity} /> {i.type} · <span className="text-slate-500 font-mono">{i.entity}</span></div>)}</div>
+        <div className="text-xs">{out.top.map((i: any) => <div key={i.id} className="border-b border-slate-200 py-1.5 text-slate-600"><StatusBadge s={i.severity} /> {i.type} · <span className="text-slate-500 font-mono">{i.entity}</span></div>)}</div>
       </div>}
     </div>
   );
@@ -284,17 +284,17 @@ export function AdminPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
         {[['Parcels', dc?.parcels], ['Buildings', dc?.buildings], ['Units', dc?.units], ['Open issues', dc?.issues],
           ['Utilities', dc?.utilities], ['Verified units', dc?.verified], ['Needs review', dc?.needs_review], ['Avg confidence', dc?.avg_confidence + '%']].map(([l, v]: any) =>
-          <div key={l} className="panel p-3.5"><div className="th-label">{l}</div><div className="text-xl font-extrabold text-white mt-0.5">{v ?? '…'}</div></div>)}
+          <div key={l} className="panel p-3.5"><div className="th-label">{l}</div><div className="text-xl font-extrabold text-slate-900 mt-0.5">{v ?? '…'}</div></div>)}
       </div>
-      <div className="panel-pad"><div className="font-semibold text-white mb-1">Validation thresholds <span className="text-[11px] font-normal text-slate-500">(prototype rules)</span></div>
+      <div className="panel-pad"><div className="font-semibold text-slate-900 mb-1">Validation thresholds <span className="text-[11px] font-normal text-slate-500">(prototype rules)</span></div>
         <div className="text-xs text-slate-500 mb-2.5">Score bands for the confidence ring and status labels. Backend defaults match these values.</div>
-        <div className="flex flex-wrap gap-2.5 items-end text-xs text-slate-300">
+        <div className="flex flex-wrap gap-2.5 items-end text-xs text-slate-600">
           <div><label>Verified ≥</label><br /><input type="number" value={th.verified} onChange={e => setTh({ ...th, verified: e.target.value })} className="input mt-1 w-20" /></div>
           <div><label>High ≥</label><br /><input type="number" value={th.high} onChange={e => setTh({ ...th, high: e.target.value })} className="input mt-1 w-20" /></div>
           <div><label>Review ≥</label><br /><input type="number" value={th.review} onChange={e => setTh({ ...th, review: e.target.value })} className="input mt-1 w-20" /></div>
           <button onClick={saveTh} className="btn-primary">Save</button>
         </div></div>
-      <div className="panel-pad"><div className="font-semibold text-white mb-1">Data ingestion <span className="text-[11px] font-normal text-slate-500">(prototype)</span></div>
+      <div className="panel-pad"><div className="font-semibold text-slate-900 mb-1">Data ingestion <span className="text-[11px] font-normal text-slate-500">(prototype)</span></div>
         <div className="text-xs text-slate-500">Upload GeoJSON/JSON (validate → <b>preview on map</b> → accept & commit, or discard). Committed records go live as Needs Review. CSV/KML parsing is simulated in demo.</div>
         <div className="flex flex-wrap gap-2 items-center mt-2.5">
         <label className="btn-ghost inline-block cursor-pointer">Choose file…
@@ -317,13 +317,13 @@ export function AdminPage() {
         </div>
         {lastImport && <div className="text-[11px] text-slate-500 mt-2">Last: {lastImport.filename} · {lastImport.received} features{lastImport.det} · bbox {lastImport.bbox ? lastImport.bbox.map((n: number) => n.toFixed(4)).join(', ') : '—'}</div>}
         </div>
-      <div className="panel-pad"><div className="font-semibold text-white mb-2.5">Audit trail</div>
+      <div className="panel-pad"><div className="font-semibold text-slate-900 mb-2.5">Audit trail</div>
         <div className="flex gap-2 mb-2.5">
           <input value={auditQ} onChange={e => setAuditQ(e.target.value)} placeholder="Filter user / action / entity…" className="input !text-xs flex-1" />
           <button onClick={exportAudit} className="btn-ghost !text-xs">Export CSV</button>
         </div>
         <div className="text-xs space-y-1 max-h-64 overflow-auto scrollthin">{filteredAudit.map((a: any, i: number) =>
-          <div key={i} className="border-b border-white/5 py-1.5 text-slate-300 font-mono !text-[11px]">{a.time} · {a.user}({a.role}) · {a.action} · {a.entity}</div>)}
+          <div key={i} className="border-b border-slate-200 py-1.5 text-slate-600 font-mono !text-[11px]">{a.time} · {a.user}({a.role}) · {a.action} · {a.entity}</div>)}
           {!filteredAudit?.length && <div className="text-slate-500">{(audit || []).length ? 'No audit rows match.' : 'No audit events yet — approve/resolve a validation issue to generate one.'}</div>}</div></div>
       <div className="panel p-4 text-xs text-slate-500">Roles: Public (safe fields+QR) · Surveyor (inspect/upload) · Officer (approve/evidence/audit) · Admin (datasets/rules/analytics). Validation thresholds 95/80/60 are configurable prototype rules.</div>
     </div>

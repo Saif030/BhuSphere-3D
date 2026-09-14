@@ -56,14 +56,14 @@ export const AREA_ROWS: { key: string; label: string; types: string[] }[] = [
 ];
 
 export const STATUS_META: Record<string, { label: string; cls: string; desc: string }> = {
-  DRAFT: { label: 'Draft', cls: 'bg-white/5 text-slate-300 border border-white/15', desc: 'Not submitted yet.' },
-  PENDING_VERIFICATION: { label: 'Pending Verification', cls: 'bg-amber-400/10 text-amber-300 border border-amber-400/30', desc: 'Awaiting officer review.' },
-  UNDER_VERIFICATION: { label: 'Under Verification', cls: 'bg-sky-400/10 text-sky-300 border border-sky-400/30', desc: 'An officer is reviewing it.' },
-  FIELD_CHECK: { label: 'Field Check', cls: 'bg-violet-400/10 text-violet-300 border border-violet-400/30', desc: 'Surveyor field verification in progress.' },
-  CORRECTION_REQUIRED: { label: 'Correction Required', cls: 'bg-orange-400/10 text-orange-300 border border-orange-400/30', desc: 'Please fix the flagged fields and resubmit.' },
-  APPROVED: { label: 'Approved', cls: 'bg-emerald-400/10 text-emerald-300 border border-emerald-400/30', desc: 'Verified and accepted.' },
-  REJECTED: { label: 'Rejected', cls: 'bg-red-400/10 text-red-300 border border-red-400/30', desc: 'Not accepted. Kept in history.' },
-  INTEGRATED: { label: 'Integrated', cls: 'bg-emerald-400/10 text-emerald-300 border border-emerald-400/30', desc: 'Live in the cadastral system.' },
-  NEEDS_REVIEW: { label: 'Needs Review', cls: 'bg-amber-400/10 text-amber-300 border border-amber-400/30', desc: 'Technical inconsistencies found.' },
-  SUBMITTED: { label: 'Submitted', cls: 'bg-sky-400/10 text-sky-300 border border-sky-400/30', desc: 'Received by the system.' },
+  DRAFT: { label: 'Draft', cls: 'bg-slate-100 text-slate-600 border border-slate-200', desc: 'Not submitted yet.' },
+  PENDING_VERIFICATION: { label: 'Pending Verification', cls: 'bg-amber-50 text-amber-700 border border-amber-200', desc: 'Awaiting officer review.' },
+  UNDER_VERIFICATION: { label: 'Under Verification', cls: 'bg-blue-50 text-gov-navy border border-blue-200', desc: 'An officer is reviewing it.' },
+  FIELD_CHECK: { label: 'Field Check', cls: 'bg-violet-50 text-violet-700 border border-violet-200', desc: 'Surveyor field verification in progress.' },
+  CORRECTION_REQUIRED: { label: 'Correction Required', cls: 'bg-orange-50 text-orange-700 border border-orange-200', desc: 'Please fix the flagged fields and resubmit.' },
+  APPROVED: { label: 'Approved', cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200', desc: 'Verified and accepted.' },
+  REJECTED: { label: 'Rejected', cls: 'bg-red-50 text-red-700 border border-red-200', desc: 'Not accepted. Kept in history.' },
+  INTEGRATED: { label: 'Integrated', cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200', desc: 'Live in the cadastral system.' },
+  NEEDS_REVIEW: { label: 'Needs Review', cls: 'bg-amber-50 text-amber-700 border border-amber-200', desc: 'Technical inconsistencies found.' },
+  SUBMITTED: { label: 'Submitted', cls: 'bg-blue-50 text-gov-navy border border-blue-200', desc: 'Received by the system.' },
 };

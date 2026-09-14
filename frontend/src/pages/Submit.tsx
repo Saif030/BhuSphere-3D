@@ -25,17 +25,17 @@ export function SubmitLanding() {
       <PageHeader title="Property Data Submission" sub="Submit or update property information for integration into the 3D cadastral system." />
       <div className="grid md:grid-cols-2 gap-3">
         <div className="panel-pad space-y-2">
-          <div className="flex items-center gap-2 text-white font-bold"><User size={18} className="text-accent-400" />Property Owner / Citizen</div>
+          <div className="flex items-center gap-2 text-slate-900 font-bold"><User size={18} className="text-gov-navy" />Property Owner / Citizen</div>
           <div className="text-xs text-slate-400">Submit or update your property information. Citizen submissions are reviewed by an authorized government officer before becoming verified cadastral information.</div>
-          <div className="text-[11px] text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded-lg p-2">Flow: submission → automatic validation → human verification → approval → live record.</div>
+          <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">Flow: submission → automatic validation → human verification → approval → live record.</div>
           {isCitizen || isGovt
             ? <Link to="/submit/new" className="btn-primary inline-block">Submit as Property Owner</Link>
             : <div className="text-xs text-slate-500">Sign in as <b>citizen</b> (demo123) to submit as a property owner.</div>}
         </div>
         <div className="panel-pad space-y-2">
-          <div className="flex items-center gap-2 text-white font-bold"><Landmark size={18} className="text-accent-400" />Government / Authorized Department</div>
+          <div className="flex items-center gap-2 text-slate-900 font-bold"><Landmark size={18} className="text-gov-navy" />Government / Authorized Department</div>
           <div className="text-xs text-slate-400">Submit authenticated property, land, building, infrastructure, or spatial information from an authorized department.</div>
-          <div className="text-[11px] text-emerald-300 bg-emerald-400/10 border border-emerald-400/30 rounded-lg p-2">Authorized source: automatic technical validation, no citizen verification queue.</div>
+          <div className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-2">Authorized source: automatic technical validation, no citizen verification queue.</div>
           {isGovt
             ? <Link to="/submit/new?as=govt" className="btn-primary inline-block">Submit as Government Department</Link>
             : <div className="text-xs text-slate-500">Requires an officer, surveyor or admin account. A public account cannot bypass verification.</div>}
@@ -54,7 +54,7 @@ export function SubmitLanding() {
 
 const F = ({ label, req, hint, children }: any) => (
   <label className="block text-xs">
-    <span className="font-medium text-slate-300">{label} {req
+    <span className="font-medium text-slate-600">{label} {req
       ? <span className="text-red-400 font-semibold">* Required</span>
       : <span className="text-slate-500">Optional</span>}</span>
     <span className="block mt-1">{children}</span>
@@ -239,9 +239,9 @@ export function SubmitWizard() {
     const govt = done.source_type === 'GOVERNMENT_DEPARTMENT';
     return (
       <div className="p-6 max-w-xl mx-auto text-center space-y-3">
-        <CheckCircle2 size={40} className="text-emerald-400 mx-auto" />
-        <div className="font-bold text-white text-xl">Submission Successful</div>
-        <div className="font-mono font-bold text-accent-300 text-lg">{done.submission_id}</div>
+        <CheckCircle2 size={40} className="text-emerald-600 mx-auto" />
+        <div className="font-bold text-slate-900 text-xl">Submission Successful</div>
+        <div className="font-mono font-bold text-gov-navy text-lg">{done.submission_id}</div>
         <div><SubStatus s={done.status} /></div>
         <div className="text-xs text-slate-400">{govt
           ? 'Authorized department source recorded. Automatic validation ran; the record is integrated or flagged for review — never the citizen queue.'
@@ -257,12 +257,12 @@ export function SubmitWizard() {
     const m = meas[mkey] || { value: '', unit: 'sqm', sqm: 0 };
     return (
       <div className="grid grid-cols-[1fr_110px_100px] gap-2 items-center">
-        <span className="text-xs text-slate-300">{label}</span>
+        <span className="text-xs text-slate-600">{label}</span>
         <input value={m.value} inputMode="decimal" placeholder="0" onChange={e => { const value = e.target.value; setM(mkey, { value, sqm: toSqm(value, m.unit || 'sqm') }); }} className={IN} />
         <select value={m.unit || 'sqm'} onChange={e => { const unit = e.target.value; setM(mkey, { unit, sqm: toSqm(m.value, unit) }); }} className="select">
           {AREA_UNITS.map(u => <option key={u}>{u}</option>)}
         </select>
-        {!!m.sqm && <span className="col-span-3 text-[11px] text-accent-300">≈ {Number(m.sqm).toFixed(2)} m² (canonical)</span>}
+        {!!m.sqm && <span className="col-span-3 text-[11px] text-gov-navy">≈ {Number(m.sqm).toFixed(2)} m² (canonical)</span>}
       </div>);
   };
 
@@ -291,27 +291,27 @@ export function SubmitWizard() {
       <div className="flex items-center gap-1 flex-wrap">
         {WIZARD_STEPS.map((t, i) => (
           <button key={t} onClick={() => i < step && setStep(i)}
-            className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg border transition-colors ${i === step ? 'border-accent-400 bg-accent-400/10 text-white font-semibold' : i < step ? 'border-white/10 text-accent-300' : 'border-white/5 text-slate-500'}`}>
+            className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg border transition-colors ${i === step ? 'border-gov-navy bg-blue-50 text-slate-900 font-semibold' : i < step ? 'border-slate-200 text-gov-navy' : 'border-slate-200 text-slate-500'}`}>
             <span className="font-mono">{i + 1}</span>{t}</button>))}
       </div>
 
       {/* STEP 0 source */}
       {step === 0 && <div className="panel-pad space-y-3">
-        <div className="font-semibold text-white text-sm">Submission source</div>
+        <div className="font-semibold text-slate-900 text-sm">Submission source</div>
         {govtMode ? (
-          <><div className="text-xs text-emerald-300 bg-emerald-400/10 border border-emerald-400/30 rounded-lg p-2.5">Government / Department submission as <b>{role}</b>. Source is recorded as an authorized institutional source.</div>
+          <><div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-2.5">Government / Department submission as <b>{role}</b>. Source is recorded as an authorized institutional source.</div>
             <F label="Department" req hint="e.g. Survey Department, Municipal Property Cell"><input value={department} onChange={e => setDepartment(e.target.value)} className={IN} placeholder="Department name" /></F></>
         ) : (
-          <div className="text-xs text-sky-300 bg-sky-400/10 border border-sky-400/30 rounded-lg p-2.5">Property Owner / Citizen submission. Your information is a <b>claim until verified</b> — an officer reviews it before it becomes cadastral data.</div>)}
+          <div className="text-xs text-sky-700 bg-sky-50 border border-sky-200 rounded-lg p-2.5">Property Owner / Citizen submission. Your information is a <b>claim until verified</b> — an officer reviews it before it becomes cadastral data.</div>)}
       </div>}
 
       {/* STEP 1 intent */}
       {step === 1 && <div className="panel-pad space-y-3">
-        <div className="font-semibold text-white text-sm">What do you want to do?</div>
+        <div className="font-semibold text-slate-900 text-sm">What do you want to do?</div>
         <div className="grid sm:grid-cols-2 gap-2">
           {[['new', 'Register / Submit New Property', 'First-time intake for this property'], ['update', 'Update Existing Property', 'Correct or extend a record already in the system']].map(([v, t, d]) => (
-            <button key={v} onClick={() => setKind(v)} className={`text-left border rounded-xl p-3 ${kind === v ? 'border-accent-400 bg-accent-400/10' : 'border-white/10 hover:bg-white/5'}`}>
-              <div className="text-sm font-semibold text-white">{t}</div><div className="text-[11px] text-slate-500">{d}</div></button>))}
+            <button key={v} onClick={() => setKind(v)} className={`text-left border rounded-xl p-3 ${kind === v ? 'border-gov-navy bg-blue-50' : 'border-slate-200 hover:bg-slate-100'}`}>
+              <div className="text-sm font-semibold text-slate-900">{t}</div><div className="text-[11px] text-slate-500">{d}</div></button>))}
         </div>
         <F label="Find existing property" hint="ULPIN, parcel, building, unit, survey no. or address — reuses global search">
           <div className="flex gap-2"><input value={lookup} onChange={e => setLookup(e.target.value)} onKeyDown={e => e.key === 'Enter' && api.search(lookup).then(r => setLookupRes(r.results || []))} className={IN} placeholder="DL-SKT-0182-B01-F08-U804" />
@@ -320,12 +320,12 @@ export function SubmitWizard() {
         {!!lookupRes.length && <div className="flex flex-wrap gap-1.5">{lookupRes.slice(0, 6).map((r: any) => (
           <button key={r.id} onClick={() => { if (r.kind === 'unit') lookupExisting(r.id, 'unit'); else if (r.kind === 'parcel') lookupExisting(r.id, 'parcel'); else if (r.kind === 'building') lookupExisting(r.id, 'building'); setKind('update'); }} className="chip">{r.label}</button>))}</div>}
         <button onClick={() => setShowMap(true)} className="btn-ghost flex items-center gap-1.5 text-xs"><MapPin size={13} />Select Property on Map</button>
-        {(targets.parcel || targets.building || targets.unit) && <div className="text-[11px] text-accent-300">Linked: {[targets.parcel, targets.building, targets.floor, targets.unit].filter(Boolean).join(' · ')}</div>}
+        {(targets.parcel || targets.building || targets.unit) && <div className="text-[11px] text-gov-navy">Linked: {[targets.parcel, targets.building, targets.floor, targets.unit].filter(Boolean).join(' · ')}</div>}
       </div>}
 
       {/* STEP 2 property & location */}
       {step === 2 && <div className="panel-pad space-y-3">
-        <div className="font-semibold text-white text-sm">Property & location</div>
+        <div className="font-semibold text-slate-900 text-sm">Property & location</div>
         <div className="grid sm:grid-cols-2 gap-3">
           <F label="Property type" req><select value={propertyType} onChange={e => setPropertyType(e.target.value)} className="select w-full">{PROPERTY_TYPES.map(t => <option key={t}>{t}</option>)}</select></F>
           <F label="Property name" req hint="e.g. Green Residency — A804"><input value={p.property_name || ''} onChange={e => set('property_name', e.target.value)} className={IN} /></F>
@@ -336,15 +336,15 @@ export function SubmitWizard() {
           <F label="Tower / Block"><input value={p.tower || ''} onChange={e => set('tower', e.target.value)} className={IN} /></F>
           <F label="Property usage" hint="Residential, commercial, office…"><input value={p.usage || ''} onChange={e => set('usage', e.target.value)} className={IN} /></F>
         </div>
-        {blocks.parcel && <div className="border-t border-white/10 pt-3 space-y-3">
-          <div className="text-xs font-bold text-white">Parcel</div>
+        {blocks.parcel && <div className="border-t border-slate-200 pt-3 space-y-3">
+          <div className="text-xs font-bold text-slate-900">Parcel</div>
           <div className="grid sm:grid-cols-2 gap-3">
             <F label="Parcel ID" req={kind === 'update'}><input value={p.parcel_id || ''} onChange={e => set('parcel_id', e.target.value.toUpperCase())} className={`${IN} font-mono`} /></F>
             <F label="Land use"><select value={p.land_use || 'Residential'} onChange={e => set('land_use', e.target.value)} className="select w-full">{['Residential', 'Commercial', 'Industrial', 'Mixed', 'Government', 'Agricultural'].map(t => <option key={t}>{t}</option>)}</select></F>
             <F label="Boundary source" hint="Survey, GIS, manual…"><input value={p.boundary_source || ''} onChange={e => set('boundary_source', e.target.value)} className={IN} /></F>
           </div></div>}
-        {blocks.building && <div className="border-t border-white/10 pt-3 space-y-3">
-          <div className="text-xs font-bold text-white">Building</div>
+        {blocks.building && <div className="border-t border-slate-200 pt-3 space-y-3">
+          <div className="text-xs font-bold text-slate-900">Building</div>
           <div className="grid sm:grid-cols-2 gap-3">
             <F label="Building name"><input value={p.building_name || ''} onChange={e => set('building_name', e.target.value)} className={IN} /></F>
             <F label="Building ID"><input value={p.building_id || ''} onChange={e => set('building_id', e.target.value.toUpperCase())} className={IN} /></F>
@@ -355,29 +355,29 @@ export function SubmitWizard() {
             <F label="Building approval ref"><input value={p.approval_ref || ''} onChange={e => set('approval_ref', e.target.value)} className={IN} /></F>
             <F label="Completion / occupancy"><input value={p.completion || ''} onChange={e => set('completion', e.target.value)} className={IN} /></F>
           </div></div>}
-        {blocks.floor && <div className="border-t border-white/10 pt-3 space-y-3">
-          <div className="text-xs font-bold text-white">Floor</div>
+        {blocks.floor && <div className="border-t border-slate-200 pt-3 space-y-3">
+          <div className="text-xs font-bold text-slate-900">Floor</div>
           <div className="grid sm:grid-cols-2 gap-3">
             <F label="Floor number" hint="Integer; -2/-1 basements, 0 ground"><input type="number" value={p.floor_number ?? ''} onChange={e => set('floor_number', e.target.value)} className={IN} /></F>
             <F label="Floor usage"><select value={p.floor_usage || 'Residential'} onChange={e => set('floor_usage', e.target.value)} className="select w-full">{['Basement', 'Parking', 'Ground', 'Residential', 'Commercial', 'Office', 'Utility', 'Mechanical', 'Terrace/Roof', 'Other'].map(t => <option key={t}>{t}</option>)}</select></F>
             <F label="Floor plan available"><select value={p.floor_plan || 'No'} onChange={e => set('floor_plan', e.target.value)} className="select w-full"><option>Yes</option><option>No</option></select></F>
           </div></div>}
-        {blocks.unit && <div className="border-t border-white/10 pt-3 space-y-3">
-          <div className="text-xs font-bold text-white">Apartment / Unit</div>
+        {blocks.unit && <div className="border-t border-slate-200 pt-3 space-y-3">
+          <div className="text-xs font-bold text-slate-900">Apartment / Unit</div>
           <div className="grid sm:grid-cols-2 gap-3">
             <F label="Unit / flat number" req><input value={p.unit_number || ''} onChange={e => set('unit_number', e.target.value)} className={IN} /></F>
             <F label="Unit type" hint="2BHK, shop, office, parking bay…"><input value={p.unit_type || ''} onChange={e => set('unit_type', e.target.value)} className={IN} /></F>
           </div></div>}
-        {blocks.utility && <div className="border-t border-white/10 pt-3 space-y-3">
-          <div className="text-xs font-bold text-white">Underground asset</div>
+        {blocks.utility && <div className="border-t border-slate-200 pt-3 space-y-3">
+          <div className="text-xs font-bold text-slate-900">Underground asset</div>
           <div className="grid sm:grid-cols-2 gap-3">
             <F label="Utility type" req><select value={p.utility_type || 'Water'} onChange={e => set('utility_type', e.target.value)} className="select w-full">{['Water', 'Electrical', 'Sewer', 'Telecom', 'Gas', 'Transport'].map(t => <option key={t}>{t}</option>)}</select></F>
             <F label="Depth (m, negative)" req><input type="number" step="0.1" value={p.depth_m ?? ''} onChange={e => set('depth_m', e.target.value)} className={IN} /></F>
             <F label="Installation year"><input type="number" value={p.install_year || ''} onChange={e => set('install_year', e.target.value)} className={IN} /></F>
             <F label="Affected parcels" hint="Comma-separated parcel IDs"><input value={p.affected_parcels || ''} onChange={e => set('affected_parcels', e.target.value)} className={IN} /></F>
           </div></div>}
-        <div className="border-t border-white/10 pt-3 space-y-3">
-          <div className="text-xs font-bold text-white">Address & coordinates</div>
+        <div className="border-t border-slate-200 pt-3 space-y-3">
+          <div className="text-xs font-bold text-slate-900">Address & coordinates</div>
           <div className="grid sm:grid-cols-3 gap-3">
             {[['state', 'State'], ['district', 'District'], ['tehsil', 'Sub-District / Tehsil'], ['city', 'City / Town / Village'], ['ward', 'Ward'], ['locality', 'Locality'], ['society', 'Colony / Society'], ['street', 'Street / Road'], ['pin', 'PIN Code'], ['landmark', 'Landmark']].map(([k, l]) => (
               <F key={k} label={l} req={['state', 'city', 'locality'].includes(k)}><input value={p[k] || ''} onChange={e => set(k, e.target.value)} className={IN} /></F>))}
@@ -393,22 +393,22 @@ export function SubmitWizard() {
 
       {/* STEP 3 measurements */}
       {step === 3 && <div className="panel-pad space-y-3">
-        <div className="font-semibold text-white text-sm">Measurements & 3D extent</div>
+        <div className="font-semibold text-slate-900 text-sm">Measurements & 3D extent</div>
         <div className="text-[11px] text-slate-500">Canonical storage is square metres — originals are preserved. Example: 1,245 sq ft ≈ 115.66 m².</div>
         <div className="space-y-2">{AREA_ROWS.filter(r => r.types.includes(propertyType)).map(r => <MRow key={r.key} mkey={r.key} label={r.label} />)}</div>
-        <div className="border-t border-white/10 pt-3 grid sm:grid-cols-3 gap-3">
+        <div className="border-t border-slate-200 pt-3 grid sm:grid-cols-3 gap-3">
           {[['length_m', 'Length (m)'], ['width_m', 'Width (m)'], ['height_m', 'Height (m)'], ['depth_m2', 'Depth (m)'], ['perimeter_m', 'Perimeter (m)'], ['building_height_m', 'Building height (m)'], ['floor_height_m', 'Floor height (m)'], ['basement_depth_m', 'Basement depth (m)'], ['ground_elev_m', 'Ground elevation (m)'], ['z_min', 'Z-Min (m)'], ['z_max', 'Z-Max (m)']].map(([k, l]) => (
             <F key={k} label={l}><input type="number" step="0.01" value={p[k] ?? ''} onChange={e => set(k, e.target.value)} className={IN} /></F>))}
           <F label="Elevation source"><input value={p.elev_source || ''} onChange={e => set('elev_source', e.target.value)} className={IN} /></F>
         </div>
         {(p.z_min != null && p.z_max != null && p.z_min !== '' && p.z_max !== '') && (
-          <div className="text-[11px] text-accent-300">Vertical extent: {(parseFloat(p.z_max) - parseFloat(p.z_min)).toFixed(2)} m</div>)}
+          <div className="text-[11px] text-gov-navy">Vertical extent: {(parseFloat(p.z_max) - parseFloat(p.z_min)).toFixed(2)} m</div>)}
       </div>}
 
       {/* STEP 4 ownership */}
       {step === 4 && <div className="panel-pad space-y-3">
-        <div className="font-semibold text-white text-sm">Ownership / rights</div>
-        <div className="text-[11px] text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded-lg p-2.5">Ownership information submitted by the user requires verification against authoritative records. Neither this form nor any AI output establishes legal ownership.</div>
+        <div className="font-semibold text-slate-900 text-sm">Ownership / rights</div>
+        <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">Ownership information submitted by the user requires verification against authoritative records. Neither this form nor any AI output establishes legal ownership.</div>
         <div className="grid sm:grid-cols-2 gap-3">
           <F label="Owner / rights holder" req><input value={p.owner_name || ''} onChange={e => set('owner_name', e.target.value)} className={IN} placeholder="As per supporting document" /></F>
           <F label="Ownership reference"><input value={p.owner_reference || ''} onChange={e => set('owner_reference', e.target.value)} className={IN} /></F>
@@ -422,12 +422,12 @@ export function SubmitWizard() {
 
       {/* STEP 5 documents */}
       {step === 5 && <div className="panel-pad space-y-3">
-        <div className="font-semibold text-white text-sm">Documents & evidence <span className="font-normal text-slate-500">(optional — provide if available)</span></div>
+        <div className="font-semibold text-slate-900 text-sm">Documents & evidence <span className="font-normal text-slate-500">(optional — provide if available)</span></div>
         {!!docs.length && <div className="space-y-1.5">{docs.map((d: any) => (
-          <div key={d.id} className="border border-white/10 rounded-lg p-2 text-xs text-slate-200">✓ <b>{d.doc_type}</b>{d.doc_number ? ` — ${d.doc_number}` : ''}<div className="text-slate-500">{[d.authority, d.doc_date, d.filename].filter(Boolean).join(' · ')}</div></div>))}</div>}
-        <div className="grid sm:grid-cols-2 gap-3 border border-dashed border-white/15 rounded-xl p-3">
+          <div key={d.id} className="border border-slate-200 rounded-lg p-2 text-xs text-slate-700">✓ <b>{d.doc_type}</b>{d.doc_number ? ` — ${d.doc_number}` : ''}<div className="text-slate-500">{[d.authority, d.doc_date, d.filename].filter(Boolean).join(' · ')}</div></div>))}</div>}
+        <div className="grid sm:grid-cols-2 gap-3 border border-dashed border-slate-200 rounded-xl p-3">
           <F label="Document type"><select value={doc.doc_type} onChange={e => setDoc({ ...doc, doc_type: e.target.value })} className="select w-full">{['Ownership document', 'Sale deed / reference', 'Registration document', 'Property tax record', 'Approved building plan', 'Floor plan', 'Survey report', 'Completion certificate', 'Occupancy certificate', 'Utility document', 'Government record', 'Property photograph', 'Other supporting document'].map(t => <option key={t}>{t}</option>)}</select></F>
-          <F label="File" req hint="PDF / image, 10 MB max"><input type="file" onChange={e => setDoc({ ...doc, file: e.target.files?.[0] })} className="text-xs text-slate-300 file:mr-2 file:btn-ghost file:border-0" /></F>
+          <F label="File" req hint="PDF / image, 10 MB max"><input type="file" onChange={e => setDoc({ ...doc, file: e.target.files?.[0] })} className="text-xs text-slate-600 file:mr-2 file:btn-ghost file:border-0" /></F>
           <F label="Document number"><input value={doc.doc_number || ''} onChange={e => setDoc({ ...doc, doc_number: e.target.value })} className={IN} /></F>
           <F label="Document date"><input value={doc.doc_date || ''} onChange={e => setDoc({ ...doc, doc_date: e.target.value })} placeholder="YYYY-MM-DD" className={IN} /></F>
           <F label="Issuing authority"><input value={doc.authority || ''} onChange={e => setDoc({ ...doc, authority: e.target.value })} className={IN} /></F>
@@ -438,7 +438,7 @@ export function SubmitWizard() {
 
       {/* STEP 6 review */}
       {step === 6 && <div className="panel-pad space-y-3">
-        <div className="font-semibold text-white text-sm">Review & declaration</div>
+        <div className="font-semibold text-slate-900 text-sm">Review & declaration</div>
         <div className="grid sm:grid-cols-2 gap-1.5 text-xs">
           {[['Property', p.property_name || propertyType], ['Intent', kind === 'new' ? 'Register new' : 'Update existing'],
             ['Parcel', targets.parcel || p.parcel_id || '—'], ['Building', targets.building || p.building_id || '—'],
@@ -448,18 +448,18 @@ export function SubmitWizard() {
             ['Owner (claim)', p.owner_name || '—'], ['Documents', `${docs.length} uploaded`],
             ['Source', govtMode ? `Authorized department (${department})` : 'Property owner (unverified)'],
             ['Status on submit', govtMode ? 'Validate → Integrated / Needs Review' : 'Pending human verification']].map(([k, v]) =>
-            <div key={k} className="bg-white/[0.03] border border-white/10 rounded-lg px-2.5 py-1.5"><span className="text-slate-500">{k}:</span> <span className="text-slate-100">{v}</span></div>)}
+            <div key={k} className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5"><span className="text-slate-500">{k}:</span> <span className="text-slate-800">{v}</span></div>)}
         </div>
         {!!diffRows().length && <div>
-          <div className="text-xs font-bold text-white mb-1">Existing vs submitted</div>
-          {diffRows().map((r: any) => <div key={r.k} className="text-xs border-b border-white/5 py-1.5"><b className="text-slate-200">{r.k}:</b> <span className="text-slate-500">{r.old}</span> <span className="text-slate-600">↓</span> <span className="text-accent-300">{r.cur}</span>{r.d ? <span className={`ml-1 font-mono ${r.d > 0 ? 'text-amber-300' : 'text-sky-300'}`}>({r.d > 0 ? '+' : ''}{r.d.toFixed(2)} {r.u})</span> : null}</div>)}
+          <div className="text-xs font-bold text-slate-900 mb-1">Existing vs submitted</div>
+          {diffRows().map((r: any) => <div key={r.k} className="text-xs border-b border-slate-200 py-1.5"><b className="text-slate-700">{r.k}:</b> <span className="text-slate-500">{r.old}</span> <span className="text-slate-600">↓</span> <span className="text-gov-navy">{r.cur}</span>{r.d ? <span className={`ml-1 font-mono ${r.d > 0 ? 'text-amber-700' : 'text-sky-700'}`}>({r.d > 0 ? '+' : ''}{r.d.toFixed(2)} {r.u})</span> : null}</div>)}
         </div>}
-        {!!dups.length && <div className="border border-amber-400/30 bg-amber-400/5 rounded-xl p-2.5">
-          <div className="text-xs font-bold text-amber-300">Possible existing property found — no automatic merge</div>
-          {dups.map((m: any) => <div key={m.id} className="text-[11px] text-slate-300 mt-1">{m.label}</div>)}
+        {!!dups.length && <div className="border border-amber-200 bg-amber-50 rounded-xl p-2.5">
+          <div className="text-xs font-bold text-amber-700">Possible existing property found — no automatic merge</div>
+          {dups.map((m: any) => <div key={m.id} className="text-[11px] text-slate-600 mt-1">{m.label}</div>)}
         </div>}
-        {!!aiWarn.length && aiWarn.map((w, i) => <div key={i} className="text-[11px] text-amber-300 bg-amber-400/5 border border-amber-400/20 rounded-lg p-2">AI assist: {w}</div>)}
-        <label className="flex gap-2 items-start text-xs text-slate-300"><input type="checkbox" checked={declared} onChange={e => setDeclared(e.target.checked)} className="mt-0.5 accent-cyan-400" />
+        {!!aiWarn.length && aiWarn.map((w, i) => <div key={i} className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">AI assist: {w}</div>)}
+        <label className="flex gap-2 items-start text-xs text-slate-600"><input type="checkbox" checked={declared} onChange={e => setDeclared(e.target.checked)} className="mt-0.5 accent-[#1A3A6B]" />
           I declare the information is true to my knowledge. I understand {govtMode ? 'it enters as an authorized department source after technical validation.' : 'ownership details are claims pending verification and do not establish legal ownership.'}</label>
       </div>}
 
@@ -473,7 +473,7 @@ export function SubmitWizard() {
       {/* map picker modal reuses the existing 2D map */}
       {showMap && <div className="fixed inset-0 z-[70] bg-black/70 p-4 flex items-center justify-center" onClick={() => setShowMap(false)}>
         <div className="panel w-full max-w-4xl h-[560px] p-3 flex flex-col gap-2" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center gap-2 text-sm"><MapPin size={15} className="text-accent-400" /><b className="text-white">Select property on map</b>
+          <div className="flex items-center gap-2 text-sm"><MapPin size={15} className="text-gov-navy" /><b className="text-slate-900">Select property on map</b>
             <span className="text-[11px] text-slate-500">Click a parcel or building to auto-fill the form</span>
             <button onClick={() => setShowMap(false)} className="btn-ghost ml-auto !py-1 !text-xs">Close</button></div>
           <div className="flex-1 min-h-0"><Map2D onSelect={pickOnMap} highlights={[]} layerState={{ parcels: true, buildings: true, utils: false }} /></div>

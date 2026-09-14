@@ -27,10 +27,10 @@ export function VerifyQueue() {
       {!isLoading && !(data || []).length && <Empty text="Queue is clear. New citizen submissions will appear here." />}
       <div className="space-y-2">{(data || []).map((s: any) => (
         <div key={s.submission_id} className="panel p-3.5 flex flex-wrap items-center gap-2">
-          <span className="font-mono font-bold text-accent-300 text-xs">{s.submission_id}</span>
-          <span className="text-xs text-slate-200">{s.payload?.property_name || s.property_type}</span>
+          <span className="font-mono font-bold text-gov-navy text-xs">{s.submission_id}</span>
+          <span className="text-xs text-slate-700">{s.payload?.property_name || s.property_type}</span>
           <span className="text-[11px] text-slate-500">by {s.submitter} · v{s.version}</span>
-          {s.priority === 'High' && <span className="text-[10px] font-bold text-red-300 border border-red-400/40 rounded-full px-2 py-0.5">HIGH PRIORITY</span>}
+          {s.priority === 'High' && <span className="text-[10px] font-bold text-red-700 border border-red-200 rounded-full px-2 py-0.5">HIGH PRIORITY</span>}
           <SubStatus s={s.status} />
           <Link to={`/submit/verify/${s.submission_id}`} className="btn-primary !py-1 !text-xs ml-auto">Open workspace</Link>
         </div>))}
@@ -104,13 +104,13 @@ export function VerifyWorkspace() {
 
   return (
     <div className="p-5 space-y-4 max-w-[1200px] mx-auto">
-      <Link to="/submit/queue" className="text-xs text-accent-400 flex items-center gap-1 w-fit"><ArrowLeft size={13} />Verification Queue</Link>
+      <Link to="/submit/queue" className="text-xs text-gov-navy flex items-center gap-1 w-fit"><ArrowLeft size={13} />Verification Queue</Link>
       <PageHeader title={`Verify ${s.submission_id}`} sub={`${s.property_type} · ${s.kind} · v${s.version} · by ${s.submitter}`}
         actions={<SubStatus s={s.status} />} />
       <div className="grid lg:grid-cols-2 gap-3">
         {/* LEFT: submitted */}
         <div className="panel-pad space-y-2">
-          <div className="font-bold text-white text-sm">Submitted information <span className="font-normal text-slate-500">(unverified claim)</span></div>
+          <div className="font-bold text-slate-900 text-sm">Submitted information <span className="font-normal text-slate-500">(unverified claim)</span></div>
           <div className="grid sm:grid-cols-2 gap-1.5 text-xs">
             {[['Property', p.property_name], ['Parcel', p.parcel_id], ['ULPIN ref', p.existing_ulpin], ['Survey', p.survey_number],
               ['Plot', p.plot_number], ['Building', p.building_name || p.building_id], ['Floors', p.num_floors],
@@ -119,56 +119,56 @@ export function VerifyWorkspace() {
               ['Coords', (p.latitude != null && p.longitude != null) ? `${p.latitude}, ${p.longitude}` : null],
               ['Owner (claim)', p.owner_name], ['Right', p.right_type], ['Z range', (p.z_min != null && p.z_max != null) ? `${p.z_min}–${p.z_max} m` : null],
               ['Height', p.building_height_m ? `${p.building_height_m} m` : null]].map(([k, v]) =>
-              <div key={k} className="bg-white/[0.03] border border-white/10 rounded-lg px-2.5 py-1.5"><span className="text-slate-500">{k}:</span> <span className="text-slate-100">{v || '—'}</span></div>)}
+              <div key={k} className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5"><span className="text-slate-500">{k}:</span> <span className="text-slate-800">{v || '—'}</span></div>)}
           </div>
           {!!Object.keys(s.measurements || {}).length && <div className="text-xs"><span className="text-slate-500">Measurements: </span>
-            {Object.entries(s.measurements).map(([k, m]: any) => <span key={k} className="text-accent-300 mr-2">{k} {m.sqm} m² <span className="text-slate-600">({m.value} {m.unit})</span></span>)}</div>}
-          <div className="text-xs font-semibold text-white pt-1">Documents ({(docs || []).length})</div>
-          {(docs || []).map((d: any) => <button key={d.id} onClick={() => downloadDoc(d.filename)} className="block text-xs text-slate-300 hover:text-white border-b border-white/5 py-1">✓ <b>{d.doc_type}</b>{d.doc_number ? ` — ${d.doc_number}` : ''} <span className="text-slate-500">· {d.authority || ''} · open</span></button>)}
+            {Object.entries(s.measurements).map(([k, m]: any) => <span key={k} className="text-gov-navy mr-2">{k} {m.sqm} m² <span className="text-slate-600">({m.value} {m.unit})</span></span>)}</div>}
+          <div className="text-xs font-semibold text-slate-900 pt-1">Documents ({(docs || []).length})</div>
+          {(docs || []).map((d: any) => <button key={d.id} onClick={() => downloadDoc(d.filename)} className="block text-xs text-slate-600 hover:text-slate-900 border-b border-slate-200 py-1">✓ <b>{d.doc_type}</b>{d.doc_number ? ` — ${d.doc_number}` : ''} <span className="text-slate-500">· {d.authority || ''} · open</span></button>)}
           {!(docs || []).length && <div className="text-[11px] text-slate-500">No documents attached.</div>}
         </div>
         {/* RIGHT: existing */}
         <div className="panel-pad space-y-2">
-          <div className="font-bold text-white text-sm">Existing cadastral record <span className="font-normal text-slate-500">(authoritative)</span></div>
+          <div className="font-bold text-slate-900 text-sm">Existing cadastral record <span className="font-normal text-slate-500">(authoritative)</span></div>
           {!exist && <button onClick={loadExisting} className="btn-ghost text-xs">Load linked record</button>}
-          {exist?.kind === 'unit' && <div className="text-xs space-y-1 text-slate-300">
-            <div className="font-mono text-accent-300">{exist.prototype_ulpin}</div>
+          {exist?.kind === 'unit' && <div className="text-xs space-y-1 text-slate-600">
+            <div className="font-mono text-gov-navy">{exist.prototype_ulpin}</div>
             <div>Area {exist.area_sqft} sq.ft · z {exist.z_min}–{exist.z_max} m · {exist.verification_status} · {exist.confidence}%</div>
             <div>Owner: {exist.owner?.display_name || '—'}</div></div>}
-          {exist?.kind === 'building' && <div className="text-xs space-y-1 text-slate-300">
-            <div className="font-bold text-white">{exist.name}</div>
+          {exist?.kind === 'building' && <div className="text-xs space-y-1 text-slate-600">
+            <div className="font-bold text-slate-900">{exist.name}</div>
             <div>Registered {exist.registered_height_m} m · LiDAR {exist.lidar_height_m} m · {exist.floors} floors · {exist.confidence}%</div></div>}
-          {exist?.kind === 'parcel' && <div className="text-xs space-y-1 text-slate-300">
-            <div className="font-mono text-accent-300">{exist.parcel_id}</div>
+          {exist?.kind === 'parcel' && <div className="text-xs space-y-1 text-slate-600">
+            <div className="font-mono text-gov-navy">{exist.parcel_id}</div>
             <div>{exist.locality} · {exist.land_use} · {Math.round(exist.area_sqft).toLocaleString()} sq.ft · {exist.confidence}%</div></div>}
           <div className="flex flex-wrap gap-1.5 pt-1">
             <Link to={`/map?q=${encodeURIComponent(s.targets?.parcel || p.parcel_id || p.property_name || '')}`} className="btn-ghost !text-[11px] flex items-center gap-1"><MapIcon size={12} />View on 2D Map</Link>
             {deep && <Link to={deep} className="btn-ghost !text-[11px] flex items-center gap-1"><Box size={12} />Open 3D Building</Link>}
           </div>
-          {(hist?.reviews || []).length > 0 && <div className="text-[11px] text-slate-500 border-t border-white/10 pt-2">Prior actions: {(hist.reviews || []).map((r: any) => `${r.action} (${r.reviewer})`).join(' → ')}</div>}
+          {(hist?.reviews || []).length > 0 && <div className="text-[11px] text-slate-500 border-t border-slate-200 pt-2">Prior actions: {(hist.reviews || []).map((r: any) => `${r.action} (${r.reviewer})`).join(' → ')}</div>}
         </div>
       </div>
       {/* action bar */}
       <div className="panel-pad space-y-2.5">
-        <div className="font-bold text-white text-sm flex items-center gap-1.5"><ClipboardCheck size={15} />Decision</div>
-        <label className="block text-xs"><span className="font-medium text-slate-300">Reason / officer note * Required for approve, reject, correction</span>
+        <div className="font-bold text-slate-900 text-sm flex items-center gap-1.5"><ClipboardCheck size={15} />Decision</div>
+        <label className="block text-xs"><span className="font-medium text-slate-600">Reason / officer note * Required for approve, reject, correction</span>
           <textarea value={reason} onChange={e => setReason(e.target.value)} rows={2} className="input w-full mt-1" placeholder="Evidence-based justification…" /></label>
         <div className="flex flex-wrap gap-1.5">
           <button onClick={() => act('verify-start')} disabled={busy} className="btn-ghost !text-xs disabled:opacity-50">Start verification</button>
           <button onClick={() => act('approve')} disabled={busy} className="btn-primary !text-xs disabled:opacity-50">Approve → integrate</button>
-          <button onClick={() => act('reject')} disabled={busy} className="btn-ghost !text-xs !border-red-400/40 !text-red-300 disabled:opacity-50">Reject</button>
+          <button onClick={() => act('reject')} disabled={busy} className="btn-ghost !text-xs !border-red-200 !text-red-700 disabled:opacity-50">Reject</button>
         </div>
-        <div className="border-t border-white/10 pt-2">
+        <div className="border-t border-slate-200 pt-2">
           <div className="text-[11px] text-slate-400 mb-1">Fields requiring correction:</div>
           <div className="flex flex-wrap gap-1.5">{payloadKeys.map(k => (
             <button key={k} onClick={() => setCorrFields(f => f.includes(k) ? f.filter(x => x !== k) : [...f, k])}
-              className={`text-[11px] border rounded-full px-2 py-0.5 ${corrFields.includes(k) ? 'border-orange-400 bg-orange-400/15 text-orange-200' : 'border-white/15 text-slate-400'}`}>{k}</button>))}</div>
-          <button onClick={() => act('correction')} disabled={busy} className="btn-ghost !text-xs mt-2 !border-orange-400/40 !text-orange-300 disabled:opacity-50">Request correction</button>
+              className={`text-[11px] border rounded-full px-2 py-0.5 ${corrFields.includes(k) ? 'border-orange-400 bg-orange-50 text-orange-700' : 'border-slate-200 text-slate-400'}`}>{k}</button>))}</div>
+          <button onClick={() => act('correction')} disabled={busy} className="btn-ghost !text-xs mt-2 !border-orange-200 !text-orange-700 disabled:opacity-50">Request correction</button>
         </div>
       </div>
       {/* field verification */}
       <div className="panel-pad space-y-2.5">
-        <div className="font-bold text-white text-sm">Field verification {openFVs.length ? `(${openFVs.length} open)` : ''}</div>
+        <div className="font-bold text-slate-900 text-sm">Field verification {openFVs.length ? `(${openFVs.length} open)` : ''}</div>
         <div className="grid sm:grid-cols-3 gap-2 text-xs">
           <label className="block"><span className="text-slate-400">Assign surveyor</span><input value={fv.assignee} onChange={e => setFv({ ...fv, assignee: e.target.value })} placeholder="surveyor" className="input w-full mt-1" /></label>
           <label className="block"><span className="text-slate-400">Scheduled</span><input value={fv.scheduled} onChange={e => setFv({ ...fv, scheduled: e.target.value })} placeholder="YYYY-MM-DD" className="input w-full mt-1" /></label>
@@ -176,11 +176,11 @@ export function VerifyWorkspace() {
         </div>
         <button onClick={createFV} disabled={busy} className="btn-ghost !text-xs disabled:opacity-50">Create field request</button>
         {openFVs.map((f: any) => (
-          <div key={f.verification_id} className="border border-violet-400/30 rounded-xl p-2.5 space-y-2">
-            <div className="text-xs font-mono text-violet-300">{f.verification_id} · Open — record result (surveyor/officer)</div>
+          <div key={f.verification_id} className="border border-violet-200 rounded-xl p-2.5 space-y-2">
+            <div className="text-xs font-mono text-violet-700">{f.verification_id} · Open — record result (surveyor/officer)</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">{fres.checks.map((c, i) => (
               <button key={c.item} onClick={() => setFres(o => ({ ...o, checks: o.checks.map((x, j) => j === i ? { ...x, done: !x.done } : x) }))}
-                className={`text-[11px] text-left border rounded-lg px-2 py-1 ${c.done ? 'border-emerald-400/50 text-emerald-200' : 'border-white/10 text-slate-400'}`}>{c.done ? '☑' : '☐'} {c.item}</button>))}</div>
+                className={`text-[11px] text-left border rounded-lg px-2 py-1 ${c.done ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-400'}`}>{c.done ? '☑' : '☐'} {c.item}</button>))}</div>
             <div className="grid sm:grid-cols-2 gap-2 text-xs">
               <label className="block"><span className="text-slate-400">Observed (JSON: coords, area, height…)</span>
                 <textarea value={fres.obs} onChange={e => setFres({ ...fres, obs: e.target.value })} rows={2} placeholder='{"area_sqm": 115.6, "coords": [77.201, 28.524]}' className="input w-full mt-1 font-mono" /></label>

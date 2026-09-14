@@ -7,32 +7,32 @@ function thresholds() {
 export function ConfidenceRing({ value, size = 92 }: { value: number; size?: number }) {
   const r = (size - 12) / 2, c = 2 * Math.PI * r;
   const th = thresholds();
-  const col = value >= th.verified ? '#34d399' : value >= th.high ? '#38bdf8' : value >= th.review ? '#fbbf24' : '#f87171';
+  const col = value >= th.verified ? '#138808' : value >= th.high ? '#1A3A6B' : value >= th.review ? '#E87722' : '#dc2626';
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size}>
-        <circle cx={size/2} cy={size/2} r={r} stroke="rgba(255,255,255,.12)" strokeWidth={9} fill="none" />
+        <circle cx={size/2} cy={size/2} r={r} stroke="#e2e8f0" strokeWidth={9} fill="none" />
         <circle cx={size/2} cy={size/2} r={r} stroke={col} strokeWidth={9} fill="none"
           strokeDasharray={c} strokeDashoffset={c - (c * value) / 100} strokeLinecap="round" transform={`rotate(-90 ${size/2} ${size/2})`} />
       </svg>
-      <div className="absolute text-center"><div className="font-bold text-white">{value.toFixed(1)}%</div>
-      <div className="text-[10px] text-slate-400">confidence</div></div>
+      <div className="absolute text-center"><div className="font-bold text-slate-900">{value.toFixed(1)}%</div>
+      <div className="text-[10px] text-slate-500">confidence</div></div>
     </div>
   );
 }
 export function StatusBadge({ s }: { s: string }) {
   const m: any = {
-    Verified: 'bg-emerald-400/10 text-emerald-300 border border-emerald-400/30',
-    'High Confidence': 'bg-sky-400/10 text-sky-300 border border-sky-400/30',
-    'Needs Review': 'bg-amber-400/10 text-amber-300 border border-amber-400/30',
-    Unverified: 'bg-red-400/10 text-red-300 border border-red-400/30',
-    Open: 'bg-amber-400/10 text-amber-300 border border-amber-400/30',
-    Resolved: 'bg-emerald-400/10 text-emerald-300 border border-emerald-400/30',
-    'Under Review': 'bg-sky-400/10 text-sky-300 border border-sky-400/30',
-    Rejected: 'bg-white/5 text-slate-400 border border-white/15',
-    High: 'bg-red-400/10 text-red-300 border border-red-400/30',
-    Medium: 'bg-amber-400/10 text-amber-300 border border-amber-400/30',
-    Low: 'bg-sky-400/10 text-sky-300 border border-sky-400/30',
+    Verified: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+    'High Confidence': 'bg-blue-50 text-gov-navy border border-blue-200',
+    'Needs Review': 'bg-amber-50 text-amber-700 border border-amber-200',
+    Unverified: 'bg-red-50 text-red-700 border border-red-200',
+    Open: 'bg-amber-50 text-amber-700 border border-amber-200',
+    Resolved: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+    'Under Review': 'bg-blue-50 text-gov-navy border border-blue-200',
+    Rejected: 'bg-slate-100 text-slate-500 border border-slate-200',
+    High: 'bg-red-50 text-red-700 border border-red-200',
+    Medium: 'bg-amber-50 text-amber-700 border border-amber-200',
+    Low: 'bg-blue-50 text-gov-navy border border-blue-200',
   };
-  return <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${m[s] || 'bg-white/5 text-slate-300 border border-white/15'}`}>{s}</span>;
+  return <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${m[s] || 'bg-slate-100 text-slate-600 border border-slate-200'}`}>{s}</span>;
 }

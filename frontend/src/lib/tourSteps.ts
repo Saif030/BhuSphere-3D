@@ -8,8 +8,8 @@ export type TourStep = { route: string; anchor: string; title: string; text: str
 export const COPILOT_DEMO_Q = 'Show buildings with height mismatch greater than 2m';
 
 export const TOUR_STEPS: TourStep[] = [
-  { route: '/', anchor: 'tour-kpis', title: '1 · City-scale register',
-    text: '12,482 parcels · 3,428 buildings · 18,764 units · 214 spatial conflicts · 94.2% confidence. Toggle City/Live to see the demo dataset underneath.',
+  { route: '/dashboard', anchor: 'tour-kpis', title: '1 · Staff register (staff only)',
+    text: 'Illustrative city-scale register with a City/Live toggle. Citizens never see this — they get a service portal instead.',
     action: 'none' },
   { route: '/map?q=Green%20Residency', anchor: 'tour-search', title: '2 · Find the flagship',
     text: 'Search runs across ULPINs, parcels, buildings and utilities. Results are already loaded — click Building A in the drawer or on the map.',

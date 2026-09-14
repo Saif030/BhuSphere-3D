@@ -84,9 +84,9 @@ export default function MapPage() {
               else if (r.kind === 'utility') onSelect({ kind: 'utility', id: r.id }, null);
               else if (r.kind === 'unit') openUnit3D(r.id);
             }}>{r.label}</button>))}
-          <label className="text-xs flex gap-1.5 items-center text-slate-300"><input type="checkbox" className="accent-cyan-400" checked={layers.parcels} onChange={e => setLayers({ ...layers, parcels: e.target.checked })} />Parcels</label>
-          <label className="text-xs flex gap-1.5 items-center text-slate-300"><input type="checkbox" className="accent-cyan-400" checked={layers.buildings} onChange={e => setLayers({ ...layers, buildings: e.target.checked })} />Buildings</label>
-          <label className="text-xs flex gap-1.5 items-center text-slate-300"><input type="checkbox" className="accent-cyan-400" checked={layers.utils} onChange={e => setLayers({ ...layers, utils: e.target.checked })} />Underground</label>
+          <label className="text-xs flex gap-1.5 items-center text-slate-600"><input type="checkbox" className="accent-[#1A3A6B]" checked={layers.parcels} onChange={e => setLayers({ ...layers, parcels: e.target.checked })} />Parcels</label>
+          <label className="text-xs flex gap-1.5 items-center text-slate-600"><input type="checkbox" className="accent-[#1A3A6B]" checked={layers.buildings} onChange={e => setLayers({ ...layers, buildings: e.target.checked })} />Buildings</label>
+          <label className="text-xs flex gap-1.5 items-center text-slate-600"><input type="checkbox" className="accent-[#1A3A6B]" checked={layers.utils} onChange={e => setLayers({ ...layers, utils: e.target.checked })} />Underground</label>
           <span className="text-[11px] text-slate-500 ml-auto hidden xl:inline">Legend:
             <span className="inline-block w-2 h-2 rounded-sm bg-emerald-400 ml-1" /> parcel verified
             <span className="inline-block w-2 h-2 rounded-sm bg-amber-400 ml-1" /> parcel review
@@ -96,8 +96,8 @@ export default function MapPage() {
         <div className="flex-1 min-h-0 relative">
           <Map2D onSelect={onSelect} highlights={highlights} layerState={layers} preview={preview} reloadToken={reloadToken} />
           {preview && <div className="absolute top-2 left-2 right-2 sm:right-auto panel px-3 py-2 flex flex-wrap items-center gap-2 text-xs">
-            <span className="inline-block w-2.5 h-2.5 rounded-sm bg-accent-400" />
-            <span className="text-slate-200 font-semibold">Preview: {preview.filename}</span>
+            <span className="inline-block w-2.5 h-2.5 rounded-sm bg-gov-navy" />
+            <span className="text-slate-700 font-semibold">Preview: {preview.filename}</span>
             <span className="text-slate-400">{preview.received} features · dashed cyan · not saved yet</span>
             <button onClick={acceptPreview} disabled={committing} className="btn-primary !py-1 !text-xs disabled:opacity-50">{committing ? 'Committing…' : 'Accept & commit'}</button>
             <button onClick={discardPreview} className="btn-ghost !py-1 !text-xs">Discard</button>
@@ -107,33 +107,33 @@ export default function MapPage() {
       <div className="panel p-4 overflow-auto scrollthin text-sm">
         <div className="th-label mb-2">Selection</div>
         {selLoading && <div className="text-slate-400 text-sm">Loading details…</div>}
-        {selError && <div className="text-red-300 text-xs bg-red-500/10 border border-red-500/30 rounded-lg p-2">{selError}</div>}
-        {!sel && !selLoading && <div className="text-slate-400 text-sm">Click a building or parcel on the map.<br /><br />Demo flow: search <b className="text-slate-200">Green Residency</b> → click <b className="text-slate-200">Building A</b> → <b className="text-slate-200">Open 3D View</b> (2D→3D transition).</div>}
+        {selError && <div className="text-red-700 text-xs bg-red-50 border border-red-200 rounded-lg p-2">{selError}</div>}
+        {!sel && !selLoading && <div className="text-slate-400 text-sm">Click a building or parcel on the map.<br /><br />Demo flow: search <b className="text-slate-700">Green Residency</b> → click <b className="text-slate-700">Building A</b> → <b className="text-slate-700">Open 3D View</b> (2D→3D transition).</div>}
         {sel?.kind === 'building' && <>
-          <div className="font-bold text-white">{sel.name}</div>
+          <div className="font-bold text-slate-900">{sel.name}</div>
           <div className="text-xs text-slate-500">Parcel {sel.parcel}</div>
           <div className="grid grid-cols-3 gap-2 my-3 text-center">
-            <div className="bg-white/[0.04] border border-white/10 rounded-lg p-2"><div className="font-bold text-white">{sel.floors}</div><div className="text-[10px] text-slate-500">Floors</div></div>
-            <div className="bg-white/[0.04] border border-white/10 rounded-lg p-2"><div className="font-bold text-white">{sel.height_m}m</div><div className="text-[10px] text-slate-500">Height</div></div>
-            <div className="bg-white/[0.04] border border-white/10 rounded-lg p-2"><div className="font-bold text-white">{sel.confidence}%</div><div className="text-[10px] text-slate-500">Confidence</div></div>
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2"><div className="font-bold text-slate-900">{sel.floors}</div><div className="text-[10px] text-slate-500">Floors</div></div>
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2"><div className="font-bold text-slate-900">{sel.height_m}m</div><div className="text-[10px] text-slate-500">Height</div></div>
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2"><div className="font-bold text-slate-900">{sel.confidence}%</div><div className="text-[10px] text-slate-500">Confidence</div></div>
           </div>
           <StatusBadge s={sel.status} />
           <button onClick={() => nav('/3d?b=' + sel.key)} className="mt-3 w-full bg-orange-500 hover:bg-orange-400 text-white rounded-lg py-2.5 font-semibold transition-colors">Open 3D View →</button>
           <div className="text-[11px] text-slate-500 mt-2">Parcel → 3D tower → floors → units.</div>
         </>}
         {sel?.kind === 'utility' && <>
-          <div className="font-bold text-white">{sel.utility_id} · {sel.type}</div>
+          <div className="font-bold text-slate-900">{sel.utility_id} · {sel.type}</div>
           <div className="text-xs text-slate-500 mt-1">Depth {sel.depth_m}m · {sel.owner} · {sel.year} · {sel.status}</div>
-          <div className="text-xs text-slate-300 mt-1">Affected parcels: {(sel.parcels || []).join(', ') || '—'}</div>
+          <div className="text-xs text-slate-600 mt-1">Affected parcels: {(sel.parcels || []).join(', ') || '—'}</div>
           <button onClick={() => setLayers(l => ({ ...l, utils: true }))} className="btn-ghost mt-3 w-full">Show underground layer</button>
         </>}
         {sel?.kind === 'parcel' && <>
-          <div className="font-bold text-white">Parcel {sel.parcel_id}</div>
+          <div className="font-bold text-slate-900">Parcel {sel.parcel_id}</div>
           <div className="text-xs text-slate-500">{sel.locality} · {sel.land_use} · {Math.round(sel.area_sqft).toLocaleString()} sq.ft</div>
           <div className="mt-2"><StatusBadge s={sel.verification_status} /> <span className="text-xs text-slate-400">{sel.confidence}%</span></div>
-          <div className="mt-3 font-semibold text-xs text-slate-300">Buildings ({sel.buildings?.length})</div>
-          {sel.buildings?.map((b: any) => <button key={b.key} onClick={() => nav('/3d?b=' + b.key)} className="block w-full text-left border border-white/10 rounded-lg px-2.5 py-2 mt-1.5 hover:bg-white/5"><b className="text-slate-100 text-xs">{b.name}</b><div className="text-[11px] text-slate-500">{b.floors} floors · {b.confidence}%</div></button>)}
-          {!!sel.underground_assets?.length && <div className="mt-3 text-xs bg-sky-400/10 border border-sky-400/30 text-sky-200 rounded-lg p-2.5">{sel.underground_assets.length} underground assets intersect this parcel: {sel.underground_assets.map((u: any) => u.utility_id).join(', ')}</div>}
+          <div className="mt-3 font-semibold text-xs text-slate-600">Buildings ({sel.buildings?.length})</div>
+          {sel.buildings?.map((b: any) => <button key={b.key} onClick={() => nav('/3d?b=' + b.key)} className="block w-full text-left border border-slate-200 rounded-lg px-2.5 py-2 mt-1.5 hover:bg-slate-100"><b className="text-slate-800 text-xs">{b.name}</b><div className="text-[11px] text-slate-500">{b.floors} floors · {b.confidence}%</div></button>)}
+          {!!sel.underground_assets?.length && <div className="mt-3 text-xs bg-sky-50 border border-sky-200 text-sky-700 rounded-lg p-2.5">{sel.underground_assets.length} underground assets intersect this parcel: {sel.underground_assets.map((u: any) => u.utility_id).join(', ')}</div>}
         </>}
       </div>
     </div>
