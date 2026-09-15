@@ -9,7 +9,6 @@ const ROLES: [string, string, string][] = [
   ['surveyor', 'Surveyor', 'Field visits & department filings'],
   ['admin', 'Administrator', 'Datasets, rules & analytics'],
   ['citizen', 'Property Owner / Citizen', 'Submit property data for verification'],
-  ['public', 'Public User', 'Safe public property identity'],
 ];
 const POINTS = [
   [Building2, 'Parcel → building → floor → unit as 3D spatial volumes'],
@@ -32,7 +31,7 @@ export default function Login() {
       setAuth(auth);
       const next = sp.get('next');
       if (next && next.startsWith('/')) nav(next);
-      else if (r.role === 'citizen' || r.role === 'public') nav('/home');
+      else if (r.role === 'citizen') nav('/home');
       else nav('/dashboard');
     }
     catch (e: any) { setErr('Sign-in failed. Use a demo role with password demo123.'); }
@@ -73,7 +72,7 @@ export default function Login() {
           <input id="pw" type="password" value={pw} onChange={e => setPw(e.target.value)} onKeyDown={e => e.key === 'Enter' && go()}
             className="input w-full mt-1 mb-3" placeholder="demo123" />
           {err && <div role="alert" className="text-red-700 text-xs mb-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{err}</div>}
-          <button onClick={go} disabled={busy} className="btn-primary w-full !py-2.5">{busy ? 'Signing in…' : u === 'citizen' || u === 'public' ? 'Sign in to service portal' : 'Sign in to dashboard'}</button>
+          <button onClick={go} disabled={busy} className="btn-primary w-full !py-2.5">{busy ? 'Signing in…' : u === 'citizen' ? 'Sign in to service portal' : 'Sign in to dashboard'}</button>
           <div className="text-[11px] text-slate-500 mt-3 text-center">All demo roles use password <b className="text-slate-700">demo123</b> · <Link to="/help" className="gov-link">Need help?</Link></div>
         </div>
       </div>

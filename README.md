@@ -27,7 +27,7 @@ cd frontend
 npm install
 npm run dev
 ```
-Open http://localhost:5173 · login `officer / demo123` (also `surveyor`, `admin`, `citizen`, `public`).
+Open http://localhost:5173 · login `officer / demo123` (also `surveyor`, `admin`, `citizen`). Verify needs no login.
 API docs: http://127.0.0.1:8000/docs
 (Cesium City 3D was removed from this build; Cesium Ion + 3D Tiles remain the documented production path.)
 

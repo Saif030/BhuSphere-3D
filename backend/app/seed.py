@@ -153,6 +153,9 @@ def seed(db):
             db.add(flag); db.add(Right(spatial_unit_id=flag.prototype_ulpin, owner_id=o.id))
     else:
         flag.area_sqft = 1245; flag.confidence = 96.4; flag.verification_status = "Verified"
+        if flag.owner_id is None:
+            flag.owner_id = owners[0].id
+            db.add(Right(spatial_unit_id=flag.prototype_ulpin, owner_id=owners[0].id))
     db.flush()
 
     # ---- utilities ----

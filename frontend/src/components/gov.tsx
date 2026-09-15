@@ -94,7 +94,7 @@ function Masthead() {
             PROTOTYPE · DEMO DATA
           </span>
           {auth ? (
-            <button onClick={() => nav(auth.role === 'citizen' || auth.role === 'public' ? '/home' : '/dashboard')} className="btn-primary">
+            <button onClick={() => nav(auth.role === 'citizen' ? '/home' : '/dashboard')} className="btn-primary">
               Go to workspace
             </button>
           ) : (

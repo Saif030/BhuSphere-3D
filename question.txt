@@ -29,7 +29,7 @@ A: Citizens can submit property data through a 7-step wizard with map-based parc
 A: Our 3D viewer features exploded floor views for individual unit inspection, underground utility tube visualization, vertical floor lists with z-range information, and interactive unit selection. The system is designed to swap procedural generation for Cesium 3D Tiles in production for real city-scale rendering.
 
 **Q: How do you ensure data security and auditability?**
-A: Every action is logged in our audit trail system. We implement role-based access control (officer, surveyor, admin, citizen, public), and property history is tracked from 2024-2026 with full provenance. Our QR-based public identity page exposes only non-sensitive reference data.
+A: Every action is logged in our audit trail system. We implement role-based access control (officer, surveyor, admin, citizen), plus anonymous public verify with no login, and property history is tracked from 2024-2026 with full provenance. Our QR-based public identity page exposes only non-sensitive reference data.
 
 ## Impact & Scalability Questions
 
@@ -48,7 +48,7 @@ A: Our system aligns with India's ULPIN (Unique Land Parcel Identification Numbe
 ## Demo-Specific Questions
 
 **Q: What are the demo credentials?**
-A: Officer/demo123, Surveyor/demo123, Admin/demo123, Citizen/demo123, Public/demo123. Each role has appropriate permissions for the workflow demonstration.
+A: Officer/demo123, Surveyor/demo123, Admin/demo123, Citizen/demo123. Verify needs no login. Each role has appropriate permissions for the workflow demonstration.
 
 **Q: Is the demo data real?**
 A: No, all data is deterministically generated synthetic data for demonstration purposes. All ULPIN identifiers are prototype labels (e.g., DL-SKT-0182-B01-F08-U804) and NOT official Government of India ULPINs. Owner names are fictional. This is explicitly disclosed throughout the application.

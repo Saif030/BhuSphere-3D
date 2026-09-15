@@ -17,7 +17,7 @@ export function SubStatus({ s }: { s: string }) {
 
 export function SubmitLanding() {
   const { auth } = useStore();
-  const role = auth?.role || 'public';
+  const role = auth?.role || '';
   const isGovt = ['officer', 'surveyor', 'admin'].includes(role);
   const isCitizen = role === 'citizen';
   const isSurveyor = role === 'surveyor';
@@ -46,7 +46,7 @@ export function SubmitLanding() {
           <div className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-2">Authorized source: automatic technical validation, no citizen verification queue.</div>
           {isGovt
             ? <Link to="/submit/new?as=govt" className="btn-primary inline-block">Submit as Government Department</Link>
-            : <div className="text-xs text-slate-500">Requires an officer, surveyor or admin account. A public account cannot bypass verification.</div>}
+            : <div className="text-xs text-slate-500">Requires an officer, surveyor or admin account.</div>}
         </div>
       </div>
       {(isCitizen || isGovt) && (
@@ -81,7 +81,7 @@ export function SubmitWizard() {
   const { auth, setToast } = useStore();
   const nav = useNavigate();
   const [sp] = useSearchParams();
-  const role = auth?.role || 'public';
+  const role = auth?.role || '';
   // Surveyors always file as an authorized department — never as property owners.
   const govtMode = role === 'surveyor'
     ? ['officer', 'surveyor', 'admin'].includes(role)

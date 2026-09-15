@@ -17,10 +17,10 @@ import { SubmitLanding, SubmitWizard } from './pages/Submit';
 import { MySubmissions, TrackSubmission } from './pages/Track';
 import { VerifyQueue, VerifyWorkspace } from './pages/Queue';
 import { FieldWorkList, FieldWorkDetail } from './pages/FieldWork';
-import { Home, About, Services, HowItWorks, VerifyPublic, Help, Contact } from './pages/Public';
+import { Home, About, Services, HowItWorks, VerifyPublic, VerifyTool, Help, Contact } from './pages/Public';
 
 const STAFF = ['officer', 'surveyor', 'admin'];
-const CITIZEN_LIKE = ['citizen', 'public'];
+const CITIZEN_LIKE = ['citizen'];
 
 function NeedRole({ roles, children }: { roles: string[]; children: React.ReactNode }) {
   const { auth } = useStore();
@@ -70,13 +70,13 @@ function Shell() {
   const [copilot, setCopilot] = useState(false);
 
   // Public portal — always reachable (GIGW-style landing, no login needed).
+  // NOTE: "/" and "/verify" are handled per branch: portal chrome when
+  // logged out, workspace-native pages when logged in.
   const publicRoutes = (
     <>
-      <Route path="/" element={<Home />} />
       <Route path="/about" element={<About />} />
       <Route path="/services" element={<Services />} />
       <Route path="/how-it-works" element={<HowItWorks />} />
-      <Route path="/verify" element={<VerifyPublic />} />
       <Route path="/help" element={<Help />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/property/:ulpin" element={<Property />} />
@@ -87,6 +87,8 @@ function Shell() {
   if (!auth) {
     return (
       <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/verify" element={<VerifyPublic />} />
         {publicRoutes}
         <Route path="*" element={<NotFound />} />
       </Routes>
@@ -96,6 +98,8 @@ function Shell() {
   return (
     <Layout onCopilot={() => setCopilot(true)}>
       <Routes>
+        <Route path="/" element={<RoleLanding />} />
+        <Route path="/verify" element={<NeedRole roles={[...CITIZEN_LIKE, ...STAFF]}><VerifyTool /></NeedRole>} />
         {publicRoutes}
         {/* Role homes */}
         <Route path="/home" element={<NeedRole roles={[...CITIZEN_LIKE, ...STAFF]}><CitizenOrStaffHome /></NeedRole>} />
@@ -121,6 +125,13 @@ function Shell() {
       <Copilot open={copilot} onClose={() => setCopilot(false)} />
     </Layout>
   );
+}
+
+/** Logged-in landing: staff → staff dashboard, citizen → service portal. */
+function RoleLanding() {
+  const { auth } = useStore();
+  if (auth && STAFF.includes(auth.role)) return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/home" replace />;
 }
 
 /** /home renders the citizen service portal for everyone; staff get a shortcut to their dashboard. */

@@ -10,6 +10,13 @@ def test_chain():
     assert c.get("/api/buildings/DL-SKT-0182/B01").status_code == 200
     u = c.get("/api/units/DL-SKT-0182-B01-F08-U804").json()
     assert u["prototype_ulpin"] == "DL-SKT-0182-B01-F08-U804" and u["confidence"] == 96.4
+def test_identity_enriched_fields():
+    r = c.get("/api/units/DL-SKT-0182-B01-F08-U804").json()
+    for k in ("address", "survey_number", "property_type", "ownership_type",
+              "registration_status", "issuing_authority", "last_updated"):
+        assert r.get(k), k
+    assert "Saket" in (r.get("address") or "")
+    assert r.get("lat") is not None and r.get("lng") is not None
 def test_ai(): assert c.post("/api/ai/query", json={"question": "Show buildings with height mismatch greater than 2m"}).json()["count"] >= 1
 def test_ulpin():
     r = c.post("/api/ulpin/generate", json={}).json()

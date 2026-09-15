@@ -1,12 +1,17 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   ShieldCheck, ClipboardEdit, History, Map as MapIcon, Box, LifeBuoy,
   ArrowRight, Search, Building2, Layers, ScanLine, Bell, FileText, Phone, Mail, MapPin, CheckCircle2,
+  ImageDown, FileDown,
 } from 'lucide-react';
 import PublicLayout, { Reveal } from '../components/gov';
+import { PageHeader } from '../components/feedback';
+import IdentityFacts from '../components/IdentityFacts';
 import { SERVICES, STEPS_CITIZEN, NOTICES, FAQS, PORTAL_META } from '../lib/content';
 import { api } from '../lib/api';
+import { downloadIdentityPdf, downloadIdentityPng } from '../lib/identityExport';
 
 const ICONS: Record<string, any> = {
   ShieldCheck, ClipboardEdit, Track: History, Map: MapIcon, Box, Help: LifeBuoy,
@@ -347,7 +352,7 @@ export function Services() {
       </div>
       <Reveal>
         <div className="mt-6 panel-pad text-xs text-slate-500">
-          Map and 3D workspaces open in the signed-in demo. Try <b className="text-slate-700">Public User / demo123</b> for safe browsing, or <b className="text-slate-700">citizen / demo123</b> to submit.
+          Map and 3D workspaces open in the signed-in demo. Sign in as <b className="text-slate-700">citizen / demo123</b> to submit and explore.
         </div>
       </Reveal>
     </PublicLayout>
@@ -404,13 +409,48 @@ export function HowItWorks() {
   );
 }
 
-/* ---------------- VERIFY (public) ---------------- */
-export function VerifyPublic() {
+/* ---------------- VERIFY ---------------- */
+/** Lookup form + identity result with no page chrome, so the public portal
+ *  and the signed-in workspace can both embed it. */
+export function VerifyPanel() {
   const params = new URLSearchParams(window.location.search);
   const [ulpin, setUlpin] = useState(params.get('ulpin') || 'DL-SKT-0182-B01-F08-U804');
   const [res, setRes] = useState<any>(null);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const qrBox = useRef<HTMLSpanElement>(null);
+  const [dlBusy, setDlBusy] = useState<'png' | 'pdf' | null>(null);
+  const [dlErr, setDlErr] = useState('');
+  const onDl = async (kind: 'png' | 'pdf') => {
+    if (!res) return;
+    setDlBusy(kind); setDlErr('');
+    try {
+      const data = {
+        ulpin: res.prototype_ulpin,
+        parcel: res.parcel,
+        building: res.building,
+        floor: res.floor_label,
+        unit: res.unit,
+        area: res.area_sqft + ' sq.ft',
+        vertical: `${res.z_min}–${res.z_max} m`,
+        confidence: Number(res.confidence) || 0,
+        status: res.verification_status,
+        url: window.location.origin + '/property/' + res.prototype_ulpin,
+        address: res.address,
+        lat: res.lat, lng: res.lng, survey_number: res.survey_number,
+        property_type: res.property_type, floor_usage: res.floor_usage,
+        building_type: res.building_type, land_use: res.land_use,
+        ownership: res.ownership_type, owner_status: res.owner_record_status,
+        registration: res.registration_status,
+        authority: res.issuing_authority, authority_detail: res.authority_detail,
+        updated: res.last_updated,
+      };
+      const svg = qrBox.current?.querySelector('svg') ?? null;
+      if (kind === 'png') await downloadIdentityPng(data, svg);
+      else await downloadIdentityPdf(data, svg);
+    } catch { setDlErr('Download failed in this browser. Try the other format.'); }
+    setDlBusy(null);
+  };
   const lookup = async (v?: string) => {
     const id = (v ?? ulpin).trim().toUpperCase();
     if (!id) return;
@@ -422,24 +462,20 @@ export function VerifyPublic() {
     setBusy(false);
   };
   return (
-    <PublicLayout trail={[{ label: 'Home', to: '/' }, { label: 'Verify Property' }]}>
-      <Reveal><PageHead kicker="Verify property" title="Verify a property identity" sub="Enter the demo reference from a QR or notice. Public mode shows geometry, verification status and reference only." /></Reveal>
-      <Reveal>
-        <div className="panel-pad mt-5 max-w-2xl">
-          <label htmlFor="verify-ulpin" className="text-xs font-semibold text-slate-700">Property reference / demo ULPIN</label>
-          <div className="flex gap-2 mt-1.5">
-            <input id="verify-ulpin" value={ulpin} onChange={(e) => setUlpin(e.target.value.toUpperCase())}
-              onKeyDown={(e) => e.key === 'Enter' && lookup()} placeholder="DL-SKT-0182-B01-F08-U804"
-              className="input flex-1 font-mono" />
-            <button onClick={() => lookup()} disabled={busy} className="btn-primary disabled:opacity-50">{busy ? 'Verifying…' : 'Verify'}</button>
-          </div>
-          <div className="text-[11px] text-slate-500 mt-2">{PORTAL_META.disclaimer}</div>
-          {err && <div role="alert" className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-3">{err}</div>}
+    <>
+      <div className="panel-pad">
+        <label htmlFor="verify-ulpin" className="text-xs font-semibold text-slate-700">Property reference / demo ULPIN</label>
+        <div className="flex gap-2 mt-1.5">
+          <input id="verify-ulpin" value={ulpin} onChange={(e) => setUlpin(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === 'Enter' && lookup()} placeholder="DL-SKT-0182-B01-F08-U804"
+            className="input flex-1 font-mono" />
+          <button onClick={() => lookup()} disabled={busy} className="btn-primary disabled:opacity-50">{busy ? 'Verifying…' : 'Verify'}</button>
         </div>
-      </Reveal>
+        <div className="text-[11px] text-slate-500 mt-2">{PORTAL_META.disclaimer}</div>
+        {err && <div role="alert" className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-3">{err}</div>}
+      </div>
       {res && (
-        <Reveal>
-          <div className="panel-pad mt-4 max-w-2xl space-y-3">
+          <div className="panel-pad mt-4 space-y-3">
             <div className="flex items-center gap-2">
               <ShieldCheck size={18} className="text-gov-green" />
               <div className="font-bold text-slate-900">Public property identity</div>
@@ -452,14 +488,46 @@ export function VerifyPublic() {
               ))}
             </div>
             <div className="text-xs text-slate-500">Confidence {res.confidence}% · Ownership detail requires an authorised role.</div>
+            <IdentityFacts u={res} />
+            <div className="text-center"><span ref={qrBox} className="inline-block bg-white p-3 rounded-xl border border-slate-200"><QRCodeSVG value={window.location.origin + '/property/' + res.prototype_ulpin} size={130} /></span></div>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => onDl('png')} disabled={dlBusy !== null} className="btn-primary text-xs inline-flex items-center gap-1.5 disabled:opacity-50">
+                <ImageDown size={14} />{dlBusy === 'png' ? 'Preparing…' : 'Download PNG'}
+              </button>
+              <button onClick={() => onDl('pdf')} disabled={dlBusy !== null} className="btn-ghost text-xs inline-flex items-center gap-1.5 disabled:opacity-50">
+                <FileDown size={14} />{dlBusy === 'pdf' ? 'Preparing…' : 'Download PDF'}
+              </button>
+              <Link to={'/property/' + res.prototype_ulpin} className="btn-ghost text-xs">Open full identity card →</Link>
+            </div>
+            {dlErr && <div role="alert" className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{dlErr}</div>}
             <div className="flex gap-2">
-              <Link to={'/property/' + res.prototype_ulpin} className="btn-primary text-xs">Open full identity card →</Link>
               <Link to="/help" className="btn-ghost text-xs">What does this mean?</Link>
             </div>
           </div>
-        </Reveal>
       )}
+    </>
+  );
+}
+
+/* Public portal version — with gov header, nav and footer. */
+export function VerifyPublic() {
+  return (
+    <PublicLayout trail={[{ label: 'Home', to: '/' }, { label: 'Verify Property' }]}>
+      <Reveal><PageHead kicker="Verify property" title="Verify a property identity" sub="Enter the demo reference from a QR or notice. Public mode shows geometry, verification status and reference only." /></Reveal>
+      <Reveal>
+        <div className="mt-5 max-w-2xl"><VerifyPanel /></div>
+      </Reveal>
     </PublicLayout>
+  );
+}
+
+/* Signed-in workspace version — no portal chrome, matches the app shell. */
+export function VerifyTool() {
+  return (
+    <div className="p-5 max-w-2xl mx-auto space-y-4">
+      <PageHeader title="Verify property" sub="Enter the demo reference from a QR or notice. Public fields only — ownership detail stays restricted." />
+      <VerifyPanel />
+    </div>
   );
 }
 
@@ -487,7 +555,7 @@ export function Help() {
           <aside className="panel-pad space-y-3 h-fit">
             <h2 className="font-bold text-slate-900 text-sm">Demo accounts</h2>
             <div className="text-xs text-slate-600 space-y-1.5">
-              {[['citizen', 'Property owner — submit & track'], ['public', 'Safe browsing + QR identity'], ['officer', 'Verify queue + approvals'], ['surveyor', 'Field checks + geometry'], ['admin', 'Datasets + audit']].map(([r, d]) => (
+              {[['citizen', 'Property owner — submit & track'], ['officer', 'Verify queue + approvals'], ['surveyor', 'Field checks + geometry'], ['admin', 'Datasets + audit']].map(([r, d]) => (
                 <div key={r} className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5"><b className="text-slate-800">{r}</b> <span className="text-slate-500">/ demo123 — {d}</span></div>
               ))}
             </div>

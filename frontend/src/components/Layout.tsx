@@ -11,7 +11,7 @@ const STAFF = ['officer', 'surveyor', 'admin'];
 
 function groupsFor(role?: string) {
   const isStaff = !!role && STAFF.includes(role);
-  const isCitizenLike = role === 'citizen' || role === 'public';
+  const isCitizenLike = role === 'citizen';
   if (isCitizenLike) {
     return [
       { title: 'My Services', items: [['/home', 'Home', Home], ['/submit', 'Submit Property', ClipboardEdit], ['/submit/my', 'My Submissions', FileText], ['/verify', 'Verify Property', ShieldAlert]] as [string, string, any][] },
@@ -20,7 +20,6 @@ function groupsFor(role?: string) {
     ];
   }
   return [
-    { title: 'Public Portal', items: [['/', 'Portal Home', Home]] as [string, string, any][] },
     { title: 'Workspace', items: [
       ['/dashboard', 'Dashboard', LayoutDashboard], ['/map', '2D Map', MapIcon], ['/3d', '3D Cadastre', Box]] as [string, string, any][] },
     { title: 'Govern', items: [

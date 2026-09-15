@@ -30,7 +30,6 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
 USERS = {"officer": {"password": "demo123", "role": "officer"},
          "surveyor": {"password": "demo123", "role": "surveyor"},
          "admin": {"password": "demo123", "role": "admin"},
-         "public": {"password": "demo123", "role": "public"},
          "citizen": {"password": "demo123", "role": "citizen"}}
 
 def get_current_user(authorization: str = Header(default="")):
@@ -42,7 +41,7 @@ def get_current_user(authorization: str = Header(default="")):
         data = jwt.decode(authorization[7:], SECRET, algorithms=[ALGO])
     except Exception:
         raise HTTPException(401, "Invalid or expired token")
-    return {"username": data.get("sub", ""), "role": data.get("role", "public")}
+    return {"username": data.get("sub", ""), "role": data.get("role", "")}
 
 def require_roles(*roles):
     def dep(u: dict = Depends(get_current_user)):
@@ -77,9 +76,81 @@ def audit(db, uid_, role, etype, eid, action, old=None, new=None):
     except Exception: db.rollback()
 
 # ---------- helpers ----------
-def unit_detail(u):
+def _identity_extra(db, u, ulpin):
+    """Public-safe record facts for the identity card. No owner PII — flags only."""
     f = u.floor; b = f.building if f else None
-    return {"prototype_ulpin": u.prototype_ulpin, "internal_id": u.id, "parcel": b.parcel_id if b else None,
+    p = b.parcel if b is not None else None
+    locality = p.locality if p is not None else None
+    city = (p.city if p is not None else None) or "Delhi"
+    bname = b.name if b else None
+    # human-readable address: Unit 804, Floor F08, Green Residency – Building A, Saket, Delhi
+    parts = []
+    if u.unit_number: parts.append(f"Unit {u.unit_number}")
+    if f is not None and f.floor_label: parts.append(f"Floor {f.floor_label}")
+    if bname: parts.append(bname)
+    if locality: parts.append(locality)
+    if city: parts.append(city)
+    center = (b.center if b is not None and b.center
+              else (p.center if p is not None and p.center else None))
+    lat = lng = None
+    if isinstance(center, (list, tuple)) and len(center) >= 2:
+        try: lng, lat = round(float(center[0]), 4), round(float(center[1]), 4)
+        except (TypeError, ValueError): pass
+    # issuing authority: prefer the registry source, else the strongest source
+    authority, authority_detail = None, None
+    if db is not None:
+        try:
+            links = db.query(models.PropertySource).filter(
+                models.PropertySource.entity_ulpin == ulpin).all()
+            srcs = []
+            for l in links:
+                s = db.query(models.DataSource).filter(models.DataSource.id == l.source_id).first()
+                if s: srcs.append(s)
+            reg = next((s for s in srcs if (s.source_type or "").upper() == "REGISTRY"), None)
+            best = reg or max(srcs, key=lambda s: 0, default=None)
+            if best:
+                authority = best.provider
+                authority_detail = f"{best.name} ({best.capture_date})" if best.capture_date else best.name
+        except Exception: pass
+    # last verified: latest history event on this exact record
+    last_updated = None
+    if db is not None:
+        try:
+            h = db.query(models.PropertyHistory).filter(
+                models.PropertyHistory.entity_id == ulpin).order_by(
+                models.PropertyHistory.timestamp.desc()).first()
+            if h: last_updated = h.timestamp
+        except Exception: pass
+    # registration / mutation flag from verification state (demo labelling)
+    owner = u.owner
+    if owner is None:
+        registration_status = "Unclaimed · verification pending"
+    elif u.verification_status == "Verified" and owner.verification_status == "Verified":
+        registration_status = "Registered · verified"
+    elif (u.verification_status or "") in ("High Confidence", "Needs Review"):
+        registration_status = "Recorded · pending final verification"
+    else:
+        registration_status = "Pending verification"
+    return {
+        "address": ", ".join(parts) if parts else None,
+        "locality": locality, "city": city,
+        "survey_number": p.survey_number if p is not None else None,
+        "lat": lat, "lng": lng,
+        "property_type": u.unit_type,
+        "building_type": b.building_type if b is not None else None,
+        "land_use": p.land_use if p is not None else None,
+        "floor_usage": f.usage if f is not None else None,
+        "ownership_type": owner.ownership_type if owner else None,
+        "owner_record_status": owner.verification_status if owner else None,
+        "registration_status": registration_status,
+        "issuing_authority": authority,
+        "authority_detail": authority_detail,
+        "last_updated": last_updated,
+    }
+
+def unit_detail(u, db=None):
+    f = u.floor; b = f.building if f else None
+    base = {"prototype_ulpin": u.prototype_ulpin, "internal_id": u.id, "parcel": b.parcel_id if b else None,
             "building": b.building_id if b else None, "building_name": b.name if b else None,
             "floor": f.floor_number if f else None, "floor_label": f.floor_label if f else None,
             "unit": u.unit_number, "area_sqft": u.area_sqft, "unit_type": u.unit_type,
@@ -88,6 +159,11 @@ def unit_detail(u):
             "confidence_status": confidence_status(u.confidence or 0),
             "owner": {"reference": u.owner.owner_reference, "display_name": u.owner.display_name,
                       "ownership_type": u.owner.ownership_type} if u.owner else None}
+    try:
+        base.update(_identity_extra(db, u, u.prototype_ulpin))
+    except Exception:
+        pass
+    return base
 
 # ---------- dashboard ----------
 @app.get("/api/dashboard/stats")
@@ -165,10 +241,12 @@ def floor(fid: str, db: Session = Depends(get_db)):
 
 @app.get("/api/units/{ulpin}")
 def unit(ulpin: str, db: Session = Depends(get_db)):
-    u = db.query(models.Unit).options(joinedload(models.Unit.floor), joinedload(models.Unit.owner)).filter(
+    u = db.query(models.Unit).options(
+        joinedload(models.Unit.floor).joinedload(models.Floor.building).joinedload(models.Building.parcel),
+        joinedload(models.Unit.owner)).filter(
         models.Unit.prototype_ulpin == ulpin).first()
     if not u: raise HTTPException(404, "Property not found")
-    return unit_detail(u)
+    return unit_detail(u, db)
 
 @app.get("/api/properties/{ulpin}")
 def prop(ulpin: str, db: Session = Depends(get_db)):
@@ -248,10 +326,12 @@ def validation_case(entity: str, db: Session = Depends(get_db)):
     iss = db.query(models.ValidationIssue).filter(models.ValidationIssue.entity_id == entity).all()
     if not iss: raise HTTPException(404, "No case for this entity")
     snapshot: dict = {"kind": "unknown", "id": entity}
-    u = db.query(models.Unit).options(joinedload(models.Unit.floor), joinedload(models.Unit.owner)).filter(
+    u = db.query(models.Unit).options(
+        joinedload(models.Unit.floor).joinedload(models.Floor.building).joinedload(models.Building.parcel),
+        joinedload(models.Unit.owner)).filter(
         models.Unit.prototype_ulpin == entity).first()
     if u:
-        snapshot = {"kind": "unit", **unit_detail(u)}
+        snapshot = {"kind": "unit", **unit_detail(u, db)}
     else:
         parts = entity.split("-")
         if len(parts) >= 4:

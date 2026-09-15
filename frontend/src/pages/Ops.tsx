@@ -325,7 +325,7 @@ export function AdminPage() {
         <div className="text-xs space-y-1 max-h-64 overflow-auto scrollthin">{filteredAudit.map((a: any, i: number) =>
           <div key={i} className="border-b border-slate-200 py-1.5 text-slate-600 font-mono !text-[11px]">{a.time} · {a.user}({a.role}) · {a.action} · {a.entity}</div>)}
           {!filteredAudit?.length && <div className="text-slate-500">{(audit || []).length ? 'No audit rows match.' : 'No audit events yet — approve/resolve a validation issue to generate one.'}</div>}</div></div>
-      <div className="panel p-4 text-xs text-slate-500">Roles: Public (safe fields+QR) · Surveyor (inspect/upload) · Officer (approve/evidence/audit) · Admin (datasets/rules/analytics). Validation thresholds 95/80/60 are configurable prototype rules.</div>
+      <div className="panel p-4 text-xs text-slate-500">Roles: Public / anonymous (safe fields+QR) · Surveyor (inspect/upload) · Officer (approve/evidence/audit) · Admin (datasets/rules/analytics). Validation thresholds 95/80/60 are configurable prototype rules.</div>
     </div>
   );
 }
