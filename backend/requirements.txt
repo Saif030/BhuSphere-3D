@@ -5,6 +5,9 @@ pydantic==2.10.4
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.20
+langchain==1.4.0
+langchain-core==1.6.3
+langchain-mistralai==1.1.6
 shapely==2.0.6
 numpy==2.2.1
 qrcode==7.4.2

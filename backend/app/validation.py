@@ -14,7 +14,8 @@ def _add(db, etype, eid, itype, sev, desc, ev, conf, action):
                            ai_confidence=conf, suggested_action=action, status="Open"))
 
 def run_all_checks(db):
-    db.query(ValidationIssue).delete()
+    # Preserve human decisions; only recompute open findings.
+    db.query(ValidationIssue).filter(ValidationIssue.status == "Open").delete()
     parcels = db.query(Parcel).all(); buildings = db.query(Building).all()
     floors = db.query(Floor).all(); units = db.query(Unit).all()
     utils = db.query(Utility).all()
@@ -51,15 +52,15 @@ def run_all_checks(db):
     by_b = defaultdict(list)
     for f in floors: by_b[f.building_key].append(f)
     for bk, fl in by_b.items():
-        fl = sorted(fl, key=lambda x: x.z_min)
+        fl = sorted(fl, key=lambda x: (x.z_min is None, x.z_min))
         nums = {f.floor_number for f in fl}
         for a, b in zip(fl, fl[1:]):
-            if a.z_max > b.z_min + 1e-9:
+            if a.z_max is not None and b.z_min is not None and a.z_max > b.z_min + 1e-9:
                 _add(db, "Floor", b.floor_id, "Floor overlap", "High",
                      f"Vertical topology conflict detected. {a.floor_label} ({a.z_min}–{a.z_max}m) overlaps {b.floor_label} ({b.z_min}–{b.z_max}m) by {a.z_max-b.z_min:.1f}m.",
                      ["Floor Plan", "LiDAR"], 93.0, "Correct floor elevations with survey.")
         for f in fl:
-            if f.z_max <= f.z_min:
+            if f.z_max is not None and f.z_min is not None and f.z_max <= f.z_min:
                 _add(db, "Floor", f.floor_id, "Invalid vertical range", "High",
                      f"Floor {f.floor_label} has invalid vertical range {f.z_min}–{f.z_max}m.", ["Floor Plan"], 95.0,
                      "Fix z_min/z_max.")

@@ -6,34 +6,35 @@ import { useStore } from '../lib/store';
 import { api } from '../lib/api';
 import DemoTour from './DemoTour';
 import { FontSizeControl } from './gov';
+import { useLang, LangToggle } from '../lib/i18n';
 
 const STAFF = ['officer', 'surveyor', 'admin'];
 
-function groupsFor(role?: string) {
-  const isStaff = !!role && STAFF.includes(role);
+function groupsFor(role: string | undefined, t: (k: string) => string) {
   const isCitizenLike = role === 'citizen';
   if (isCitizenLike) {
     return [
-      { title: 'My Services', items: [['/home', 'Home', Home], ['/submit', 'Submit Property', ClipboardEdit], ['/submit/my', 'My Submissions', FileText], ['/verify', 'Verify Property', ShieldAlert]] as [string, string, any][] },
-      { title: 'Explore', items: [['/map', '2D Map', MapIcon], ['/3d', '3D View', Box]] as [string, string, any][] },
-      { title: 'Help', items: [['/help', 'Help / FAQ', LifeBuoy], ['/contact', 'Contact Us', FileText]] as [string, string, any][] },
+      { title: t('side.services'), items: [['/home', t('side.home'), Home], ['/submit', t('side.submit'), ClipboardEdit], ['/submit/my', t('side.my'), FileText], ['/verify', t('side.verify'), ShieldAlert]] as [string, string, any][] },
+      { title: t('side.explore'), items: [['/map', t('side.map'), MapIcon], ['/3d', t('side.view3d'), Box]] as [string, string, any][] },
+      { title: t('side.help'), items: [['/help', t('side.faq'), LifeBuoy], ['/contact', t('side.contact'), FileText]] as [string, string, any][] },
     ];
   }
   return [
-    { title: 'Workspace', items: [
-      ['/dashboard', 'Dashboard', LayoutDashboard], ['/map', '2D Map', MapIcon], ['/3d', '3D Cadastre', Box]] as [string, string, any][] },
-    { title: 'Govern', items: [
-      ['/validation', 'Validation', ShieldAlert], ['/infrastructure', 'Infrastructure', Cable], ['/reports', 'Reports', FileText]] as [string, string, any][],
+    { title: t('side.workspace'), items: [
+      ['/dashboard', t('side.dash'), LayoutDashboard], ['/map', t('side.map'), MapIcon], ['/3d', t('side.cadastre'), Box]] as [string, string, any][] },
+    { title: t('side.govern'), items: [
+      ['/validation', t('side.validation'), ShieldAlert], ['/infrastructure', t('side.infra'), Cable], ['/reports', t('side.reports'), FileText]] as [string, string, any][],
       roles: STAFF },
-    { title: 'Submit Data', items: [
-      ['/submit', 'Submit Property', ClipboardEdit], ['/submit/my', 'My Submissions', FileText], ['/field-work', 'Field Work', ClipboardCheck], ['/submit/queue', 'Verify Queue', ShieldAlert]] as [string, string, any][],
+    { title: t('side.submitData'), items: [
+      ['/submit', t('side.submit'), ClipboardEdit], ['/submit/my', t('side.my'), FileText], ['/field-work', t('side.field'), ClipboardCheck], ['/submit/queue', t('side.queue'), ShieldAlert]] as [string, string, any][],
       roles: ['citizen', 'officer', 'surveyor', 'admin'] },
-    { title: 'System', items: [['/admin', 'Admin', Settings]] as [string, string, any][], roles: ['admin'] },
+    { title: t('side.system'), items: [['/admin', t('side.admin'), Settings]] as [string, string, any][], roles: ['admin'] },
   ];
 }
 
 function NotifBell() {
   const { auth } = useStore();
+  const { t } = useLang();
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
   const can = auth && ['citizen', 'officer', 'surveyor', 'admin'].includes(auth.role);
@@ -48,14 +49,14 @@ function NotifBell() {
   };
   return (
     <div className="relative">
-      <button onClick={() => setOpen(o => !o)} title="Notifications" aria-label="Notifications"
+      <button onClick={() => setOpen(o => !o)} title={t('notif.title')} aria-label={t('notif.title')}
         className="relative p-1.5 text-slate-500 hover:text-gov-navy">
         <Bell size={16} />
         {!!unread && <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 rounded-full bg-gov-saffron text-white text-[10px] font-bold flex items-center justify-center">{unread}</span>}
       </button>
       {open && <div className="absolute right-0 top-9 w-80 max-w-[calc(100vw-2rem)] max-h-96 overflow-auto panel p-2 z-[80] shadow-xl">
-        <div className="text-[11px] font-bold text-slate-500 px-2 py-1">NOTIFICATIONS</div>
-        {!(data || []).length && <div className="text-xs text-slate-500 px-2 py-2">No notifications.</div>}
+        <div className="text-[11px] font-bold text-slate-500 px-2 py-1">{t('notif.head')}</div>
+        {!(data || []).length && <div className="text-xs text-slate-500 px-2 py-2">{t('notif.empty')}</div>}
         {(data || []).map((n: any) => (
           <button key={n.id} onClick={() => openLink(n)} className={`block w-full text-left px-2 py-1.5 rounded-lg hover:bg-slate-100 ${n.read ? '' : 'bg-orange-50'}`}>
             <div className={`text-xs font-semibold ${n.read ? 'text-slate-500' : 'text-slate-900'}`}>{n.title}</div>
@@ -74,9 +75,10 @@ function Toast() {
 
 export default function Layout({ children, onCopilot }: { children: React.ReactNode; onCopilot: () => void }) {
   const { auth, setAuth, setTour } = useStore(); const nav = useNavigate();
+  const { t } = useLang();
   const [sq, setSq] = useState('');
   const goSearch = () => { if (sq.trim()) nav('/map?q=' + encodeURIComponent(sq.trim())); };
-  const groups = groupsFor(auth?.role);
+  const groups = groupsFor(auth?.role, t);
   return (
     <div className="flex h-screen bg-slate-100 text-slate-700">
       <aside className="w-16 md:w-60 bg-white border-r border-slate-200 flex flex-col shrink-0">
@@ -104,38 +106,39 @@ export default function Layout({ children, onCopilot }: { children: React.ReactN
                   </NavLink>))}
               </div>
             </div>))}
-          <button onClick={onCopilot} title="AI Copilot"
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold bg-gov-navy text-white hover:bg-gov-navyDark transition mt-2">
-            <Bot size={17} /><span className="hidden md:inline">AI Copilot</span></button>
+            <button onClick={onCopilot} title={t('side.copilot')}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold bg-gov-navy text-white hover:bg-gov-navyDark transition mt-2">
+              <Bot size={17} /><span className="hidden md:inline">{t('side.copilot')}</span></button>
         </nav>
         <div className="p-3 border-t border-slate-200">
           <div className="hidden md:block px-1 mb-2">
             <div className="text-xs font-semibold text-slate-900 capitalize">{auth?.username}</div>
-            <div className="text-[11px] text-slate-500 capitalize">{auth?.role} · demo session</div>
+            <div className="text-[11px] text-slate-500 capitalize">{auth?.role} · {t('side.demo')}</div>
           </div>
-          <button onClick={() => { setAuth(null); nav('/'); }} title="Logout"
-            className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-900 px-1"><LogOut size={14} /><span className="hidden md:inline">Logout</span></button>
+          <button onClick={() => { setAuth(null); nav('/'); }} title={t('side.logout')}
+            className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-900 px-1"><LogOut size={14} /><span className="hidden md:inline">{t('side.logout')}</span></button>
         </div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
         <header className="relative z-30 bg-white/95 backdrop-blur border-b border-slate-200 px-4 py-2.5 flex items-center gap-3">
           <div className="min-w-0">
-            <div className="font-semibold text-slate-900 text-sm truncate">Vertical Property Mapping & Spatial Governance</div>
+            <div className="font-semibold text-slate-900 text-sm truncate">{t('head.title')}</div>
             <div className="text-[11px] text-slate-400 hidden sm:block">SIH 2026 · Problem Statement 26011 · Prototype identifiers are not official ULPINs</div>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <FontSizeControl tone="light" />
+            <LangToggle tone="light" />
             <NotifBell />
             <div className="hidden md:flex items-center bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 w-64 focus-within:border-gov-navy">
               <Search size={14} className="text-slate-400 shrink-0" />
               <input value={sq} onChange={e => setSq(e.target.value)} onKeyDown={e => e.key === 'Enter' && goSearch()}
-                placeholder="Search ULPIN, parcel, building…" className="bg-transparent text-xs ml-1.5 w-full focus:outline-none placeholder:text-slate-400" />
+                placeholder={t('head.search')} className="bg-transparent text-xs ml-1.5 w-full focus:outline-none placeholder:text-slate-400" />
             </div>
             <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap">DEMO</span>
             {auth?.role && STAFF.includes(auth.role) && (
             <button onClick={() => setTour(0)} title="Start guided demo tour"
               className="flex items-center gap-1.5 text-[11px] font-bold bg-gov-saffron text-white rounded-lg px-3 py-1.5 hover:bg-gov-saffronDark transition-colors whitespace-nowrap">
-              <Presentation size={13} />Present</button>)}
+              <Presentation size={13} />{t('head.tour')}</button>)}
           </div>
         </header>
         <main className="flex-1 overflow-auto bg-slate-100">{children}</main>

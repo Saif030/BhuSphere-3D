@@ -14,7 +14,7 @@ from . import models
 from .ulpin import make_prototype_ulpin, confidence_status
 from .seed import seed as run_seed
 from .validation import run_all_checks
-from .aicopilot import answer_query
+from .aicopilot import answer_query  # noqa: F401 (kept for tests/other callers)
 
 SECRET = os.getenv("JWT_SECRET", "dev-secret-change-in-production")
 ALGO = "HS256"
@@ -154,6 +154,7 @@ def unit_detail(u, db=None):
             "building": b.building_id if b else None, "building_name": b.name if b else None,
             "floor": f.floor_number if f else None, "floor_label": f.floor_label if f else None,
             "unit": u.unit_number, "area_sqft": u.area_sqft, "unit_type": u.unit_type,
+            "geometry": u.geometry,
             "z_min": f.z_min if f else None, "z_max": f.z_max if f else None,
             "verification_status": u.verification_status, "confidence": u.confidence,
             "confidence_status": confidence_status(u.confidence or 0),
@@ -260,17 +261,11 @@ def sources(ulpin: str, db: Session = Depends(get_db)):
         s = db.query(models.DataSource).filter(models.DataSource.id == l.source_id).first()
         if s: out.append({"type": s.source_type, "name": s.name, "date": s.capture_date,
                           "resolution": s.resolution, "provider": s.provider, "score": l.score})
-    if not out:
-        for s in db.query(models.DataSource).limit(7).all():
-            out.append({"type": s.source_type, "name": s.name, "date": s.capture_date,
-                        "resolution": s.resolution, "provider": s.provider, "score": 95.0})
     return {"ulpin": ulpin, "evidence": out}
 
 @app.get("/api/properties/{ulpin}/history")
 def history(ulpin: str, db: Session = Depends(get_db)):
     h = db.query(models.PropertyHistory).filter(models.PropertyHistory.entity_id == ulpin).order_by(models.PropertyHistory.timestamp).all()
-    if not h:
-        h = db.query(models.PropertyHistory).filter(models.PropertyHistory.entity_id.like("%0182%")).limit(5).all()
     return [{"event": x.event_type, "description": x.description, "timestamp": x.timestamp} for x in h]
 
 @app.get("/api/properties/{ulpin}/validation")
@@ -390,9 +385,18 @@ class AIIn(BaseModel):
     question: str
 
 @app.post("/api/ai/query")
-def ai(b: AIIn, db: Session = Depends(get_db)):
+def ai(b: AIIn, db: Session = Depends(get_db), authorization: str = Header(default="")):
     if db.query(models.Parcel).count() == 0: run_seed(db)
-    return answer_query(db, b.question)
+    # Optional identity: logged-in users get role-aware answers; anonymous stays public.
+    user = None
+    if authorization.startswith("Bearer "):
+        try:
+            data = jwt.decode(authorization[7:], SECRET, algorithms=[ALGO])
+            user = {"username": data.get("sub", ""), "role": data.get("role", "")}
+        except Exception:
+            user = None
+    from .aicopilot import answer_with_llm
+    return answer_with_llm(db, b.question, user)
 
 # ---------- audit / import ----------
 @app.get("/api/audit")
@@ -535,23 +539,24 @@ class SubmissionIn(BaseModel):
     target_building: str = ""
     target_floor: str = ""
     target_unit: str = ""
-
-def _source_for(role: str) -> str:
-    return "GOVERNMENT_DEPARTMENT" if role in GOVT_ROLES else "PROPERTY_OWNER"
+    # explicit filing intent: officers/surveyors may file as owners (queue path)
+    # or as their department (authorized auto path). Citizens always file as owners.
+    as_owner: bool = False
 
 @app.post("/api/submissions")
 def create_submission(b: SubmissionIn, db: Session = Depends(get_db),
                       u: dict = Depends(require_roles(*SUBMIT_ROLES))):
+    source = "PROPERTY_OWNER" if (u["role"] == "citizen" or b.as_owner) else "GOVERNMENT_DEPARTMENT"
     s = models.Submission(submission_id=subsvc.next_submission_id(db),
                           submitter=u["username"], submitter_role=u["role"],
-                          source_type=_source_for(u["role"]),
+                          source_type=source,
                           department=b.department or None, kind=b.kind,
                           property_type=b.property_type, payload=b.payload,
                           measurements=b.measurements, target_parcel=b.target_parcel or None,
                           target_building=b.target_building or None,
                           target_floor=b.target_floor or None,
                           target_unit=b.target_unit or None,
-                          status="DRAFT", trust="AUTHORIZED" if u["role"] in GOVT_ROLES else "UNVERIFIED")
+                          status="DRAFT", trust="AUTHORIZED" if source == "GOVERNMENT_DEPARTMENT" else "UNVERIFIED")
     db.add(s); db.commit()
     audit(db, u["username"], u["role"], "Submission", s.submission_id, "created")
     return _sub_out(s)
@@ -576,10 +581,11 @@ def my_submissions(db: Session = Depends(get_db),
 def verification_queue(status: str = "", priority: str = "",
                        db: Session = Depends(get_db),
                        u: dict = Depends(require_roles(*OFFICER_ROLES))):
+    # Citizen claims plus department NEEDS_REVIEW items both need officer eyes.
     q = db.query(models.Submission).filter(
-        models.Submission.source_type == "PROPERTY_OWNER",
         models.Submission.status.in_(("PENDING_VERIFICATION", "UNDER_VERIFICATION",
-                                      "FIELD_CHECK", "CORRECTION_REQUIRED")))
+                                      "FIELD_CHECK", "CORRECTION_REQUIRED",
+                                      "NEEDS_REVIEW")))
     if status: q = q.filter(models.Submission.status == status)
     if priority: q = q.filter(models.Submission.priority == priority)
     return [_sub_out(s) for s in q.order_by(models.Submission.created_at).limit(200).all()]
@@ -632,6 +638,8 @@ def get_submission(sid: str, db: Session = Depends(get_db),
 def update_draft(sid: str, b: SubmissionIn, db: Session = Depends(get_db),
                  u: dict = Depends(require_roles(*SUBMIT_ROLES))):
     s = _get_owned(sid, db, u)
+    if s.status in ("INTEGRATED", "APPROVED", "REJECTED"):
+        raise HTTPException(409, f"Record is {s.status}; file a new submission to change a live record")
     if s.status not in ("DRAFT", "CORRECTION_REQUIRED") and u["role"] not in OFFICER_ROLES:
         raise HTTPException(409, f"Cannot edit while {s.status}")
     s.kind, s.property_type, s.payload, s.measurements = b.kind, b.property_type, b.payload, b.measurements
@@ -668,7 +676,7 @@ def submit_submission(sid: str, db: Session = Depends(get_db),
     v = subsvc.auto_validate(full, s.measurements or {})
     if v["errors"]:
         raise HTTPException(422, "; ".join(v["errors"]))
-    if u["role"] in GOVT_ROLES:
+    if s.source_type == "GOVERNMENT_DEPARTMENT":
         # AUTHORIZED SOURCE → automatic validation, never the citizen queue
         dups = subsvc.find_duplicates(db, s.payload or {})
         if dups:
@@ -683,6 +691,8 @@ def submit_submission(sid: str, db: Session = Depends(get_db),
         s.status, s.trust = "INTEGRATED", "AUTHORIZED"
         db.commit()
         audit(db, u["username"], u["role"], "Submission", sid, "integrated", new=res)
+        subsvc.notify(db, u["username"], "Department submission integrated",
+                      f"{sid} is live in the cadastral system.", f"/submit/track/{sid}")
         return {**_sub_out(s), "validation": v, "applied": res["applied"]}
     s.status, s.trust = "PENDING_VERIFICATION", "UNVERIFIED"
     # AI assist: possible duplicates raise verification priority
@@ -715,30 +725,44 @@ def review_submission(sid: str, b: ReviewIn2, db: Session = Depends(get_db),
                                    reviewer_role=u["role"], action=b.action,
                                    reason=b.reason, fields=b.fields))
     applied: list = []
+    REVIEWABLE = ("PENDING_VERIFICATION", "UNDER_VERIFICATION", "FIELD_CHECK", "NEEDS_REVIEW")
     if b.action == "verify-start":
+        if s.status not in ("PENDING_VERIFICATION", "NEEDS_REVIEW"):
+            raise HTTPException(409, f"Cannot start verification while {s.status}")
         s.status = "UNDER_VERIFICATION"; s.assignee = u["username"]
         subsvc.notify(db, s.submitter, "Verification started",
                       f"{sid} is under review by {u['username']}.", f"/submit/track/{sid}")
     elif b.action == "approve":
         if not b.reason:
             raise HTTPException(422, "Approval requires a reason/note")
-        res = subsvc.apply_submission(db, s, u["username"])
+        if s.status not in REVIEWABLE:
+            raise HTTPException(409, f"Cannot approve while {s.status}")
+        v = subsvc.auto_validate({**(s.payload or {}), "property_type": s.property_type},
+                                 s.measurements or {})
+        if v["errors"]:
+            raise HTTPException(422, "; ".join(v["errors"]))
+        try:
+            res = subsvc.apply_submission(db, s, u["username"])
+        except ValueError as e:
+            raise HTTPException(422, str(e))
         applied = res["applied"]
-        s.status, s.trust = "APPROVED", "VERIFIED"
-        db.commit()
-        s.status = "INTEGRATED"
+        s.status, s.trust = "INTEGRATED", "VERIFIED"
         db.commit()
         subsvc.notify(db, s.submitter, "Submission approved",
                       f"{sid} approved; the property record was updated.", f"/submit/track/{sid}")
     elif b.action == "reject":
         if not b.reason:
             raise HTTPException(422, "Rejection requires a reason")
+        if s.status not in REVIEWABLE:
+            raise HTTPException(409, f"Cannot reject while {s.status}")
         s.status = "REJECTED"
         db.commit()
         subsvc.notify(db, s.submitter, "Submission rejected", f"{sid}: {b.reason}", f"/submit/track/{sid}")
     elif b.action == "correction":
         if not b.reason:
             raise HTTPException(422, "Correction request requires reason and fields")
+        if s.status not in REVIEWABLE:
+            raise HTTPException(409, f"Cannot request correction while {s.status}")
         db.add(models.SubmissionVersion(submission_id=sid, version=s.version,
                                         payload=s.payload, measurements=s.measurements,
                                         note="Snapshot before correction request"))
@@ -756,8 +780,12 @@ def review_submission(sid: str, b: ReviewIn2, db: Session = Depends(get_db),
 def resubmit(sid: str, b: SubmissionIn, db: Session = Depends(get_db),
              u: dict = Depends(require_roles(*SUBMIT_ROLES))):
     s = _get_owned(sid, db, u)
-    if s.status != "CORRECTION_REQUIRED":
-        raise HTTPException(409, f"Resubmit allowed only from CORRECTION_REQUIRED (now {s.status})")
+    if s.status not in ("CORRECTION_REQUIRED", "REJECTED"):
+        raise HTTPException(409, f"Resubmit allowed only from CORRECTION_REQUIRED/REJECTED (now {s.status})")
+    full = {**(b.payload or {}), "property_type": b.property_type}
+    v = subsvc.auto_validate(full, b.measurements or {})
+    if v["errors"]:
+        raise HTTPException(422, "; ".join(v["errors"]))
     db.add(models.SubmissionVersion(submission_id=sid, version=s.version,
                                     payload=s.payload, measurements=s.measurements,
                                     note="Pre-correction snapshot"))
@@ -782,6 +810,8 @@ def create_field_verification(sid: str, b: FieldIn, db: Session = Depends(get_db
                               u: dict = Depends(require_roles(*OFFICER_ROLES))):
     s = db.query(models.Submission).filter(models.Submission.submission_id == sid).first()
     if not s: raise HTTPException(404, "Submission not found")
+    if s.status not in ("PENDING_VERIFICATION", "UNDER_VERIFICATION", "FIELD_CHECK", "NEEDS_REVIEW"):
+        raise HTTPException(409, f"Cannot request field verification while {s.status}")
     default_checks = ["Property exists", "Address matches", "Parcel boundary matches",
                       "Building exists", "Floor exists", "Unit exists", "Measurements verified",
                       "Coordinates checked", "Documents checked", "Photographs collected"]

@@ -1,4 +1,5 @@
 /** Shared helpers for the Property Data Submission intake flow. */
+import { dict as dictWork } from './dictWork';
 
 export const SQM_PER_UNIT: Record<string, number> = {
   'sqm': 1, 'm²': 1, 'sq ft': 1 / 10.7639, 'sqft': 1 / 10.7639,
@@ -15,13 +16,31 @@ export function toSqm(value: any, unit: string): number {
 export const PROPERTY_TYPES = [
   'Land Parcel', 'Residential House', 'Apartment / Flat', 'Residential Building',
   'Commercial Property', 'Commercial Unit', 'Industrial Property', 'Government Property',
-  'Parking', 'Basement', 'Mixed Use', 'Underground Asset', 'Other',
+  'Parking', 'Basement', 'Mixed Use', 'Underground Asset', 'PG / Hostel', 'Other',
 ];
 
 export const WIZARD_STEPS = [
   'Source', 'Intent', 'Property & Location', 'Measurements',
   'Ownership', 'Documents', 'Review & Submit',
 ];
+
+/** Display labels stay indexed to PROPERTY_TYPES/WIZARD_STEPS — internal values remain English. */
+export const PROPERTY_TYPES_HI = [
+  'भूमि पार्सल', 'आवासीय घर', 'अपार्टमेंट / फ्लैट', 'आवासीय भवन',
+  'वाणिज्यिक संपत्ति', 'वाणिज्यिक इकाई', 'औद्योगिक संपत्ति', 'सरकारी संपत्ति',
+  'पार्किंग', 'बेसमेंट', 'मिश्रित उपयोग', 'भूमिगत संपत्ति', 'पीजी / हॉस्टल', 'अन्य',
+];
+
+export const WIZARD_STEPS_HI = [
+  'स्रोत', 'उद्देश्य', 'संपत्ति व स्थान', 'माप',
+  'स्वामित्व', 'दस्तावेज़', 'समीक्षा व जमा',
+];
+
+export const AREA_LABEL_HI: Record<string, string> = {
+  plot_area: 'प्लॉट / पार्सल क्षेत्र', carpet_area: 'कारपेट क्षेत्र', builtup_area: 'निर्मित क्षेत्र',
+  'super_builtup_area': 'सुपर निर्मित क्षेत्र', floor_area: 'तल क्षेत्र', unit_area: 'इकाई क्षेत्र',
+  common_area: 'सामान्य क्षेत्र', parking_area: 'पार्किंग क्षेत्र',
+};
 
 export type Blocks = { parcel: boolean; building: boolean; floor: boolean; unit: boolean; utility: boolean };
 
@@ -65,5 +84,27 @@ export const STATUS_META: Record<string, { label: string; cls: string; desc: str
   REJECTED: { label: 'Rejected', cls: 'bg-red-50 text-red-700 border border-red-200', desc: 'Not accepted. Kept in history.' },
   INTEGRATED: { label: 'Integrated', cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200', desc: 'Live in the cadastral system.' },
   NEEDS_REVIEW: { label: 'Needs Review', cls: 'bg-amber-50 text-amber-700 border border-amber-200', desc: 'Technical inconsistencies found.' },
-  SUBMITTED: { label: 'Submitted', cls: 'bg-blue-50 text-gov-navy border border-blue-200', desc: 'Received by the system.' },
 };
+
+/** Status code → [labelKey, descKey] in dictWork (meta.*). Classes stay with STATUS_META. */
+const META_KEY: Record<string, [string, string]> = {
+  DRAFT: ['meta.DRAFT', 'meta.DRAFTd'],
+  PENDING_VERIFICATION: ['meta.PENDING', 'meta.PENDINGd'],
+  UNDER_VERIFICATION: ['meta.UNDER', 'meta.UNDERd'],
+  FIELD_CHECK: ['meta.FIELD', 'meta.FIELDd'],
+  CORRECTION_REQUIRED: ['meta.CORR', 'meta.CORRd'],
+  APPROVED: ['meta.APPROVED', 'meta.APPROVEDd'],
+  REJECTED: ['meta.REJECTED', 'meta.REJECTEDd'],
+  INTEGRATED: ['meta.INTEGRATED', 'meta.INTEGRATEDd'],
+  NEEDS_REVIEW: ['meta.NEEDS', 'meta.NEEDSd'],
+};
+
+/** Lang-aware status metadata: translated label/desc via meta.* keys, classes from STATUS_META. */
+export function statusMeta(lang: 'en' | 'hi'): Record<string, { label: string; cls: string; desc: string }> {
+  const pick = (k: string) => (dictWork as any)[lang]?.[k] ?? (dictWork as any).en[k] ?? k;
+  const out: Record<string, { label: string; cls: string; desc: string }> = {};
+  for (const [code, [lk, dk]] of Object.entries(META_KEY)) {
+    out[code] = { label: pick(lk), cls: STATUS_META[code].cls, desc: pick(dk) };
+  }
+  return out;
+}

@@ -19,9 +19,129 @@ LOCALITIES = [
 def ring(cx, cy, w, h):
     return [[cx-w/2, cy-h/2],[cx+w/2, cy-h/2],[cx+w/2, cy+h/2],[cx-w/2, cy+h/2],[cx-w/2, cy-h/2]]
 
+# ---- showcase stock: independent houses + student PGs + one mid-rise ----
+# Explicit parcels (0196+) so they never collide with the generated 0183-0195
+# range. Idempotent: ensure_showcase_stock() skips parcel_ids that exist,
+# so old demo DBs gain the new stock via POST /api/seed without a wipe.
+SHOWCASE_SPECS = [
+    {"parcel": "0196", "loc": "SKT", "name": "Saket Villa-1", "dx": 0.011, "dy": 0.008,
+     "w": 0.0012, "h": 0.0010, "land_use": "Residential",
+     "buildings": [("B01", "Independent House", 1, 1)],
+     "btype": "Residential House", "utype": "Independent House",
+     "areas": [1650, 1800, 2100], "no_basement": True},
+    {"parcel": "0197", "loc": "SKT", "name": "Saket Villa-2", "dx": 0.0135, "dy": 0.0055,
+     "w": 0.0012, "h": 0.0010, "land_use": "Residential",
+     "buildings": [("B01", "Independent House", 2, 2)],
+     "btype": "Residential House", "utype": "Independent House",
+     "areas": [1450, 1650, 1900], "no_basement": True},
+    {"parcel": "0198", "loc": "MLV", "name": "Malviya House-3", "dx": -0.011, "dy": 0.008,
+     "w": 0.0012, "h": 0.0010, "land_use": "Residential",
+     "buildings": [("B01", "Independent House", 1, 1)],
+     "btype": "Residential House", "utype": "Independent House",
+     "areas": [1500, 1750, 2000], "no_basement": True},
+    {"parcel": "0199", "loc": "HZK", "name": "Scholars PG", "dx": 0.011, "dy": 0.008,
+     "w": 0.0022, "h": 0.0016, "land_use": "Mixed",
+     "buildings": [("B01", "PG Block", 5, 40)],
+     "btype": "PG Accommodation", "utype": "PG Room",
+     "areas": [180, 220, 260, 320]},
+    {"parcel": "0200", "loc": "MLV", "name": "Campus Stay PG", "dx": 0.011, "dy": -0.008,
+     "w": 0.0022, "h": 0.0016, "land_use": "Mixed",
+     "buildings": [("B01", "PG Block", 4, 40)],
+     "btype": "PG Accommodation", "utype": "PG Room",
+     "areas": [160, 200, 240, 300]},
+    {"parcel": "0201", "loc": "HZK", "name": "Hauz Khas Residency", "dx": -0.011, "dy": -0.008,
+     "w": 0.0028, "h": 0.0020, "land_use": "Residential",
+     "buildings": [("B01", "Tower A", 8, 64)],
+     "btype": "Residential", "utype": "Residential",
+     "areas": [945, 1100, 1245, 1380]},
+]
+
+def ensure_showcase_stock(db):
+    """Insert showcase parcels/buildings missing from this DB. Returns count added."""
+    from .models import Right as _Right
+    locs = {loc["code"]: loc for loc in LOCALITIES}
+    sources = db.query(DataSource).all()
+    owners = db.query(Owner).all()
+    if not owners:
+        return 0
+    # flagship safety net: hero unit must carry an owner for the demo
+    flag = db.query(Unit).filter(Unit.prototype_ulpin == "DL-SKT-0182-B01-F08-U804").first()
+    if flag is not None and flag.owner_id is None:
+        flag.owner_id = owners[0].id
+        if not db.query(_Right).filter(_Right.spatial_unit_id == flag.prototype_ulpin).first():
+            db.add(_Right(spatial_unit_id=flag.prototype_ulpin, owner_id=owners[0].id))
+    added = 0
+    for ps in SHOWCASE_SPECS:
+        loc = locs[ps["loc"]]
+        parcel_id = f"DL-{loc['code']}-{ps['parcel']}"
+        if db.query(Parcel).filter(Parcel.parcel_id == parcel_id).first():
+            continue
+        cx, cy = loc["base"][0] + ps["dx"], loc["base"][1] + ps["dy"]
+        conf = round(random.uniform(88, 99), 1)
+        p = Parcel(parcel_id=parcel_id, prototype_ulpin=parcel_id, survey_number=f"SY-{ps['parcel']}",
+                   locality=loc["name"], land_use=ps.get("land_use", "Residential"),
+                   area_sqft=round(ps["w"]*ps["h"]*1.2e10/10.76, 0),
+                   geometry=ring(cx, cy, ps["w"], ps["h"]), center=[cx, cy],
+                   verification_status="Verified" if conf >= 95 else ("Needs Review" if conf < 80 else "High Confidence"),
+                   confidence=conf)
+        db.add(p); db.flush()
+        db.add(PropertyHistory(entity_id=parcel_id, event_type="Parcel registered",
+                               description=f"{ps['name']} parcel registered via municipal GIS.",
+                               timestamp="2024-02-10",
+                               source_id=sources[0].id if sources else None))
+        for (bcode, bname, nfloors, nunits) in ps["buildings"]:
+            bx, by = cx, cy
+            bw, bh = ps["w"]/2.2, ps["h"]/2.4
+            reg_h = round(nfloors*3.0, 1)
+            bconf = round(random.uniform(88, 98), 1)
+            b = Building(building_id=bcode, parcel_id=parcel_id, name=f"{ps['name']} – {bname}",
+                         geometry=ring(bx, by, bw, bh), center=[bx, by],
+                         height_m=reg_h, registered_height_m=reg_h, lidar_height_m=reg_h,
+                         num_floors=nfloors, building_type=ps.get("btype", "Residential"),
+                         construction_year=random.randint(2015, 2024),
+                         verification_status="Verified" if bconf >= 95 else "High Confidence",
+                         confidence=bconf)
+            db.add(b); db.flush()
+            db.add(PropertyHistory(entity_id=f"{parcel_id}-{bcode}", event_type="Building registered",
+                                   description=f"{bname} registered with {nfloors} floors.", timestamp="2024-06-15"))
+            floor_nums = ([0] + list(range(1, nfloors+1))) if ps.get("no_basement") else ([-2, -1, 0] + list(range(1, nfloors+1)))
+            per_floor = max(1, nunits // max(nfloors, 1))
+            for fn in floor_nums:
+                fl = floor_label(fn)
+                zmin, zmax = (fn-1)*3.0, fn*3.0
+                fconf = round(random.uniform(88, 99), 1)
+                f = Floor(floor_id=f"{parcel_id}-{bcode}-{fl}", building_key=b.id,
+                          floor_number=fn, floor_label=fl, z_min=zmin, z_max=zmax,
+                          geometry=ring(bx, by, bw, bh),
+                          usage="Parking" if fn < 0 else ("Lobby" if fn == 0 else "Residential"),
+                          verification_status="Verified" if fconf >= 95 else "High Confidence", confidence=fconf)
+                db.add(f); db.flush()
+                if fn >= 1:
+                    for uidx in range(per_floor):
+                        uno = f"{fn}{uidx+1:02d}"
+                        ulpin = f"{parcel_id}-{bcode}-{fl}-U{uno}"
+                        uconf = round(random.uniform(88, 98), 1)
+                        owner = random.choice(owners)
+                        un = Unit(unit_id=ulpin, prototype_ulpin=ulpin, floor_key=f.id,
+                                  unit_number=uno, geometry=ring(bx, by, bw/3, bh/3),
+                                  area_sqft=random.choice(ps.get("areas", [1100])),
+                                  unit_type=ps.get("utype", "Residential"),
+                                  verification_status="Verified" if uconf >= 95 else "High Confidence",
+                                  confidence=uconf, owner_id=owner.id)
+                        db.add(un)
+                        db.add(_Right(spatial_unit_id=ulpin, owner_id=owner.id, right_type="Ownership"))
+                        for s in random.sample(sources, k=min(len(sources), random.randint(4, 7))):
+                            db.add(PropertySource(entity_ulpin=ulpin, source_id=s.id, score=round(random.uniform(90, 99), 1)))
+        added += 1
+    return added
+
 def seed(db):
     if db.query(Parcel).count() > 0:
-        return {"seeded": False}
+        added = ensure_showcase_stock(db)
+        db.commit()
+        from .validation import run_all_checks
+        run_all_checks(db)
+        return {"seeded": added > 0, "upgraded": True, "added_parcels": added}
     # ---- sources ----
     src_defs = [
         ("GIS", "Municipal GIS Parcel Layer", "2026-04-14", "10 cm", "MCD Survey"),

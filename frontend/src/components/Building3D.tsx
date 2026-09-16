@@ -84,15 +84,25 @@ export default function Building3D({ building, selectedFloor, onFloor, selectedU
           pin(cx, topY + uh + 0.55, cz, cx, topY + uh, cz, scene);
         });
       }
-      scene.fog = new THREE.Fog(0x0b1e3a, 60, 160);
       cam.position.set(13, 11, 15);
       ctl.target.set(0, 2.2, 0);
+      // Keep fog beyond the farthest allowed zoom so slabs never wash out.
+      const dist0 = cam.position.distanceTo(ctl.target);
+      ctl.minDistance = 6;
+      ctl.maxDistance = dist0 * 2.2;
+      scene.fog = new THREE.Fog(0x0b1e3a, dist0 * 2.4, dist0 * 4.5);
     } else {
       // ---- full tower with symmetric explode ----
       const floors = [...building.floor_list].sort((a, b) => a.number - b.number);
       const selIdx = floors.findIndex(f => f.floor_id === selectedFloor);
       const totalH = floors.length * STEP;
-      scene.fog = new THREE.Fog(0x0b1e3a, totalH * 1.8, totalH * 4.5);
+      // Fog used to scale with building height only: on a 1–2 floor house the
+      // camera started inside the fog and zoom-out faded everything. Cap the
+      // zoom range and keep fog beyond it instead.
+      const viewR = totalH * 0.85 + 16;
+      ctl.minDistance = Math.max(6, viewR * 0.25);
+      ctl.maxDistance = viewR * 2.2;
+      scene.fog = new THREE.Fog(0x0b1e3a, viewR * 2.4, viewR * 4.5);
       const group = new THREE.Group(); scene.add(group);
       const fw = 10, fd = 8, fh = 2.2;
       let selY = totalH / 2;
@@ -133,9 +143,14 @@ export default function Building3D({ building, selectedFloor, onFloor, selectedU
           scene.add(tube); click.push(tube);
         });
       }
-      if (camPos.current) cam.position.fromArray(camPos.current);
-      else { const R = totalH * 0.85 + 16; cam.position.set(R * 0.62, totalH * 0.55 + 12, R * 0.72); }
       ctl.target.set(0, selY, 0);
+      if (camPos.current) {
+        cam.position.fromArray(camPos.current);
+        // Clamp a restored position into the allowed zoom range.
+        const off = cam.position.clone().sub(ctl.target);
+        if (off.length() > ctl.maxDistance) cam.position.copy(ctl.target).addScaledVector(off.normalize(), ctl.maxDistance);
+      }
+      else { const R = totalH * 0.85 + 16; cam.position.set(R * 0.62, totalH * 0.55 + 12, R * 0.72); }
     }
 
     const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();

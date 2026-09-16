@@ -187,11 +187,19 @@ def apply_submission(db: Session, sub: models.Submission, reviewer: str) -> dict
             models.Building.building_id == bcode).first()
         if building:
             if p.get("building_height_m"):
-                building.registered_height_m = float(p["building_height_m"])
-                building.height_m = float(p["building_height_m"])
+                try:
+                    h = float(p["building_height_m"])
+                except (TypeError, ValueError):
+                    raise ValueError(f"Invalid building_height_m: {p['building_height_m']!r}")
+                building.registered_height_m = h
+                building.height_m = h
                 applied.append(f"building height → {p['building_height_m']} m")
             if p.get("num_floors"):
-                building.num_floors = int(p["num_floors"])
+                try:
+                    n = int(p["num_floors"])
+                except (TypeError, ValueError):
+                    raise ValueError(f"Invalid num_floors: {p['num_floors']!r}")
+                building.num_floors = n
                 applied.append(f"floors → {p['num_floors']}")
 
     # --- floor + unit updates ---
@@ -205,7 +213,10 @@ def apply_submission(db: Session, sub: models.Submission, reviewer: str) -> dict
                 applied.append(f"unit area → {unit.area_sqft} sq.ft")
             fl = unit.floor
             if fl and p.get("z_min") is not None and p.get("z_max") is not None:
-                fl.z_min, fl.z_max = float(p["z_min"]), float(p["z_max"])
+                try:
+                    fl.z_min, fl.z_max = float(p["z_min"]), float(p["z_max"])
+                except (TypeError, ValueError):
+                    raise ValueError(f"Invalid z_min/z_max: {p['z_min']!r}/{p['z_max']!r}")
                 applied.append(f"vertical range → {p['z_min']}–{p['z_max']} m")
             # ownership claim becomes a real link only after human/government approval (this point)
             if p.get("owner_name"):

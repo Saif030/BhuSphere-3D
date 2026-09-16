@@ -17,7 +17,7 @@ import { SubmitLanding, SubmitWizard } from './pages/Submit';
 import { MySubmissions, TrackSubmission } from './pages/Track';
 import { VerifyQueue, VerifyWorkspace } from './pages/Queue';
 import { FieldWorkList, FieldWorkDetail } from './pages/FieldWork';
-import { Home, About, Services, HowItWorks, VerifyPublic, VerifyTool, Help, Contact } from './pages/Public';
+import { Home, About, Services, HowItWorks, VerifyPublic, VerifyTool, Help, HelpTool, Contact, ContactTool } from './pages/Public';
 
 const STAFF = ['officer', 'surveyor', 'admin'];
 const CITIZEN_LIKE = ['citizen'];
@@ -70,15 +70,13 @@ function Shell() {
   const [copilot, setCopilot] = useState(false);
 
   // Public portal — always reachable (GIGW-style landing, no login needed).
-  // NOTE: "/" and "/verify" are handled per branch: portal chrome when
-  // logged out, workspace-native pages when logged in.
+  // NOTE: "/", "/verify", "/help" and "/contact" are handled per branch:
+  // portal chrome when logged out, workspace-native pages when logged in.
   const publicRoutes = (
     <>
       <Route path="/about" element={<About />} />
       <Route path="/services" element={<Services />} />
       <Route path="/how-it-works" element={<HowItWorks />} />
-      <Route path="/help" element={<Help />} />
-      <Route path="/contact" element={<Contact />} />
       <Route path="/property/:ulpin" element={<Property />} />
       <Route path="/login" element={<LoginRedirect />} />
     </>
@@ -89,6 +87,8 @@ function Shell() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/verify" element={<VerifyPublic />} />
+        <Route path="/help" element={<Help />} />
+        <Route path="/contact" element={<Contact />} />
         {publicRoutes}
         <Route path="*" element={<NotFound />} />
       </Routes>
@@ -100,6 +100,8 @@ function Shell() {
       <Routes>
         <Route path="/" element={<RoleLanding />} />
         <Route path="/verify" element={<NeedRole roles={[...CITIZEN_LIKE, ...STAFF]}><VerifyTool /></NeedRole>} />
+        <Route path="/help" element={<NeedRole roles={[...CITIZEN_LIKE, ...STAFF]}><HelpTool /></NeedRole>} />
+        <Route path="/contact" element={<NeedRole roles={[...CITIZEN_LIKE, ...STAFF]}><ContactTool /></NeedRole>} />
         {publicRoutes}
         {/* Role homes */}
         <Route path="/home" element={<NeedRole roles={[...CITIZEN_LIKE, ...STAFF]}><CitizenOrStaffHome /></NeedRole>} />

@@ -17,7 +17,9 @@ def test_identity_enriched_fields():
         assert r.get(k), k
     assert "Saket" in (r.get("address") or "")
     assert r.get("lat") is not None and r.get("lng") is not None
-def test_ai(): assert c.post("/api/ai/query", json={"question": "Show buildings with height mismatch greater than 2m"}).json()["count"] >= 1
+def test_ai(monkeypatch):
+    monkeypatch.delenv("LLM_API_KEY", raising=False)  # hermetic: rules engine only
+    assert c.post("/api/ai/query", json={"question": "Show buildings with height mismatch greater than 2m"}).json()["count"] >= 1
 def test_ulpin():
     r = c.post("/api/ulpin/generate", json={}).json()
     assert r["prototype_3d_ulpin"] == "DL-SKT-0182-B01-F08-U804" and "disclaimer" in r
@@ -31,7 +33,8 @@ def test_validation_run_and_review():
 def test_pagination():
     assert len(c.get("/api/buildings?limit=5").json()) == 5
     assert len(c.get("/api/validation/issues?severity=High&limit=3").json()) <= 3
-def test_ai_fallback():
+def test_ai_fallback(monkeypatch):
+    monkeypatch.delenv("LLM_API_KEY", raising=False)  # hermetic: rules engine only
     r = c.post("/api/ai/query", json={"question": "hello, what can you do?"}).json()
     assert r["count"] == 0 and "height mismatch" in r["answer"]
 def _token(u):
@@ -109,6 +112,76 @@ def test_submission_validation_and_duplicates():
     d = c.post("/api/submissions/check-duplicates", json={"payload": {"parcel_id": "DL-SKT-0182"}}, headers=h).json()
     assert any(m["id"] == "DL-SKT-0182" for m in d["duplicates"])
     _wipe_submission(sid)
+def test_review_guards_and_resubmit_from_rejected():
+    h, ho = _h("citizen"), _h("officer")
+    res = c.get("/api/search?q=DL-SKT-0182-B01-F01").json()["results"]
+    ulpin = [r["id"] for r in res if r["kind"] == "unit"][0]
+    old_area = c.get(f"/api/units/{ulpin}").json()["area_sqft"]
+    body = {"kind": "update", "property_type": "Apartment / Flat",
+            "payload": {"parcel_id": "DL-SKT-0182", "unit_number": "101"},
+            "measurements": {"carpet_area": {"value": 120, "unit": "sqm", "sqm": 120}},
+            "target_unit": ulpin}
+    sid = c.post("/api/submissions", json=body, headers=h).json()["submission_id"]
+    try:
+        # approve-from-draft skips verification → blocked
+        assert c.post(f"/api/submissions/{sid}/review", json={"action": "approve", "reason": "x"}, headers=ho).status_code == 409
+        assert c.post(f"/api/submissions/{sid}/submit", headers=h).json()["status"] == "PENDING_VERIFICATION"
+        assert c.post(f"/api/submissions/{sid}/review", json={"action": "verify-start"}, headers=ho).json()["status"] == "UNDER_VERIFICATION"
+        assert c.post(f"/api/submissions/{sid}/review", json={"action": "reject", "reason": "nope"}, headers=ho).json()["status"] == "REJECTED"
+        # rejected is recoverable via resubmit (version bump)
+        r2 = c.post(f"/api/submissions/{sid}/resubmit", json=body, headers=h).json()
+        assert r2["status"] == "PENDING_VERIFICATION" and r2["version"] == 2
+        assert c.post(f"/api/submissions/{sid}/review", json={"action": "verify-start"}, headers=ho).json()["status"] == "UNDER_VERIFICATION"
+        assert c.post(f"/api/submissions/{sid}/review", json={"action": "approve", "reason": "ok"}, headers=ho).json()["status"] == "INTEGRATED"
+        # live record immutable: no edits, no second approve
+        assert c.put(f"/api/submissions/{sid}", json=body, headers=ho).status_code == 409
+        assert c.post(f"/api/submissions/{sid}/review", json={"action": "approve", "reason": "again"}, headers=ho).status_code == 409
+    finally:
+        from app.database import SessionLocal
+        from app import models
+        db = SessionLocal()
+        db.query(models.Unit).filter(models.Unit.prototype_ulpin == ulpin).update({"area_sqft": old_area})
+        db.commit(); db.close()
+        _wipe_submission(sid)
+
+def test_needs_review_visible_in_queue():
+    ho = _h("officer")
+    r = c.post("/api/submissions", json={"kind": "new", "property_type": "Apartment / Flat",
+        "department": "Survey Department",
+        "payload": {"parcel_id": "DL-SKT-0182", "building_id": "B09", "floor_number": 1,
+                    "unit_number": "101", "locality_code": "SKT"},
+        "measurements": {}}, headers=ho).json()
+    sid = r["submission_id"]
+    try:
+        assert c.post(f"/api/submissions/{sid}/submit", headers=ho).json()["status"] == "NEEDS_REVIEW"
+        assert any(x["submission_id"] == sid for x in c.get("/api/submissions/queue", headers=ho).json())
+    finally:
+        _wipe_submission(sid)
+
+def test_validation_run_preserves_decisions():
+    c.post("/api/validation/run")
+    first = c.get("/api/validation/issues?limit=1").json()[0]
+    c.post(f"/api/validation/{first['id']}/review", json={"status": "Resolved"})
+    c.post("/api/validation/run")
+    rows = c.get("/api/validation/issues?limit=500").json()
+    assert any(i["id"] == first["id"] and i["status"] == "Resolved" for i in rows)
+
+def test_demo_stock_houses_and_pg():
+    c.post("/api/seed")
+    h = c.get("/api/parcels/DL-SKT-0196").json()
+    assert h["locality"] == "Saket" and len(h["buildings"]) == 1
+    b = c.get("/api/buildings/DL-SKT-0196/B01").json()
+    assert b["floors"] == 1
+    pg = c.get("/api/buildings/DL-HZK-0199/B01").json()
+    assert pg["floors"] == 5
+    f = c.get("/api/floors/DL-HZK-0199-B01-F01").json()
+    assert len(f["units"]) == 8
+    u = c.get(f"/api/units/{f['units'][0]['ulpin']}").json()
+    assert u["property_type"] == "PG Room" and u["ownership_type"] in ("Freehold", "Leasehold")
+    assert "Hauz Khas" in (u["address"] or "")
+    assert any(r["kind"] == "building" for r in c.get("/api/search?q=PG").json()["results"])
+    assert any(r["kind"] == "building" for r in c.get("/api/search?q=Villa").json()["results"])
+
 def test_validation_case_b03():
     r = c.get("/api/validation/case/DL-SKT-0182-B03").json()
     assert r["entity"] == "DL-SKT-0182-B03" and r["snapshot"]["kind"] == "building"

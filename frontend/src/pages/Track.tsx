@@ -4,8 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { History, FileText, Pencil } from 'lucide-react';
 import { api } from '../lib/api';
 import { useStore } from '../lib/store';
+import { useLang } from '../lib/i18n';
 import { Empty, PageHeader, Skeleton } from '../components/feedback';
-import { STATUS_META } from '../lib/submit';
+import { statusMeta } from '../lib/submit';
 import { SubStatus } from './Submit';
 
 export function downloadDoc(filename: string) {
@@ -18,12 +19,13 @@ export function downloadDoc(filename: string) {
 
 export function MySubmissions() {
   const { data, isLoading } = useQuery({ queryKey: ['my-subs'], queryFn: () => api.get('/api/submissions/my') });
+  const { t } = useLang();
   return (
     <div className="p-5 space-y-4 max-w-[1000px] mx-auto">
-      <PageHeader title="My Submissions" sub="Track every property submission and its verification timeline"
-        actions={<Link to="/submit/new" className="btn-primary !py-1.5 !text-xs">+ New submission</Link>} />
+      <PageHeader title={t('trk.title')} sub={t('trk.sub')}
+        actions={<Link to="/submit/new" className="btn-primary !py-1.5 !text-xs">{t('trk.new')}</Link>} />
       {isLoading && <Skeleton className="h-24" />}
-      {!isLoading && !(data || []).length && <Empty text="No submissions yet. Start one from the submission form." />}
+      {!isLoading && !(data || []).length && <Empty text={t('trk.empty')} />}
       <div className="space-y-2">{(data || []).map((s: any) => (
         <Link key={s.submission_id} to={`/submit/track/${s.submission_id}`}
           className="panel p-3.5 flex flex-wrap items-center gap-2 hover:border-gov-navy/30 transition-colors">
@@ -39,49 +41,51 @@ export function MySubmissions() {
 export function TrackSubmission() {
   const { sid } = useParams();
   const { auth } = useStore();
+  const { lang, t } = useLang();
   const { data: s, isLoading, isError } = useQuery({ queryKey: ['sub', sid], queryFn: () => api.get('/api/submissions/' + sid) });
   const { data: h } = useQuery({ queryKey: ['sub-h', sid], queryFn: () => api.get(`/api/submissions/${sid}/history`), enabled: !!s });
   const { data: docs } = useQuery({ queryKey: ['sub-d', sid], queryFn: () => api.get(`/api/submissions/${sid}/documents`), enabled: !!s });
-  if (isLoading) return <div className="p-6 text-sm text-slate-400">Loading submission…</div>;
-  if (isError || !s) return <div className="p-6 max-w-xl mx-auto"><Empty text="Submission not found or not shared with you." /></div>;
-  const meta = STATUS_META[s.status] || STATUS_META.SUBMITTED;
+  if (isLoading) return <div className="p-6 text-sm text-slate-400">{t('trk.loading')}</div>;
+  if (isError || !s) return <div className="p-6 max-w-xl mx-auto"><Empty text={t('trk.notfound')} /></div>;
+  const meta = statusMeta(lang);
+  const m = meta[s.status] || meta.DRAFT;
   const mine = s.submitter === auth?.username;
   const p = s.payload || {};
   return (
     <div className="p-5 space-y-4 max-w-[900px] mx-auto">
-      <PageHeader title={s.submission_id} sub={`${s.property_type} · ${s.kind === 'new' ? 'new registration' : 'update'} · v${s.version}`}
+      <PageHeader title={s.submission_id} sub={`${s.property_type} · ${s.kind === 'new' ? t('trk.newReg') : t('trk.upd')} · v${s.version}`}
         actions={<SubStatus s={s.status} />} />
-      <div className="panel-pad text-xs text-slate-400">{meta.desc} Trust: <b className="text-slate-700">{s.trust}</b>
-        {s.source_type === 'GOVERNMENT_DEPARTMENT' && <span> · Authorized department{s.department ? ` (${s.department})` : ''}</span>}</div>
+      <div className="panel-pad text-xs text-slate-400">{m.desc} {t('trk.trust')}<b className="text-slate-700">{s.trust}</b>
+        {s.source_type === 'GOVERNMENT_DEPARTMENT' && <span> · {t('trk.authorized')}{s.department ? ` (${s.department})` : ''}</span>}</div>
       {s.status === 'CORRECTION_REQUIRED' && mine && (
         <div className="panel-pad border-orange-200">
-          <div className="font-bold text-orange-700 text-sm">Correction required</div>
+          <div className="font-bold text-orange-700 text-sm">{t('trk.correction')}</div>
           <div className="text-xs text-slate-600 mt-1">{h?.reviews?.slice(-1)[0]?.reason}</div>
-          {!!h?.reviews?.slice(-1)[0]?.fields?.length && <div className="text-[11px] text-slate-500 mt-1">Fields: {h.reviews.slice(-1)[0].fields.join(', ')}</div>}
-          <Link to={`/submit/new?draft=${s.submission_id}`} className="btn-primary inline-flex items-center gap-1.5 mt-2 !text-xs"><Pencil size={13} />Edit & resubmit</Link>
+          {!!h?.reviews?.slice(-1)[0]?.fields?.length && <div className="text-[11px] text-slate-500 mt-1">{t('trk.fields', { v: h.reviews.slice(-1)[0].fields.join(', ') })}</div>}
+          <Link to={`/submit/new?draft=${s.submission_id}`} className="btn-primary inline-flex items-center gap-1.5 mt-2 !text-xs"><Pencil size={13} />{t('trk.editResub')}</Link>
         </div>)}
-      {s.status === 'DRAFT' && mine && <Link to={`/submit/new?draft=${s.submission_id}`} className="btn-ghost inline-flex items-center gap-1.5 text-xs"><Pencil size={13} />Continue editing draft</Link>}
+      {s.status === 'DRAFT' && mine && <Link to={`/submit/new?draft=${s.submission_id}`} className="btn-ghost inline-flex items-center gap-1.5 text-xs"><Pencil size={13} />{t('trk.continue')}</Link>}
       <div className="panel-pad">
-        <div className="font-semibold text-slate-900 text-sm mb-2">Submitted data</div>
+        <div className="font-semibold text-slate-900 text-sm mb-2">{t('trk.data')}</div>
         <div className="grid sm:grid-cols-2 gap-1.5 text-xs">
-          {[['Property', p.property_name || s.property_type], ['Parcel', s.targets?.parcel || p.parcel_id || '—'],
-            ['Building', s.targets?.building || p.building_id || '—'], ['Floor', s.targets?.floor || p.floor_number || '—'],
-            ['Unit', s.targets?.unit || p.unit_number || '—'], ['Survey', p.survey_number || '—'],
-            ['Address', [p.society, p.locality, p.city, p.pin].filter(Boolean).join(', ') || '—'],
-            ['Coords', (p.latitude != null && p.longitude != null) ? `${p.latitude}, ${p.longitude} (${p.coord_source || '?'})` : '—'],
-            ['Owner (claim)', p.owner_name || '—'], ['Right', p.right_type || '—']].map(([k, v]) =>
+          {[[t('sub.rProp'), p.property_name || s.property_type], [t('sub.rParcel'), s.targets?.parcel || p.parcel_id || '—'],
+            [t('sub.rBld'), s.targets?.building || p.building_id || '—'], [t('sub.rFloor'), s.targets?.floor || p.floor_number || '—'],
+            [t('sub.rUnit'), s.targets?.unit || p.unit_number || '—'], [t('trk.rSurvey'), p.survey_number || '—'],
+            [t('trk.rAddr'), [p.society, p.locality, p.city, p.pin].filter(Boolean).join(', ') || '—'],
+            [t('trk.rCoords'), (p.latitude != null && p.longitude != null) ? `${p.latitude}, ${p.longitude} (${p.coord_source || '?'})` : '—'],
+            [t('sub.rOwner'), p.owner_name || '—'], [t('trk.rRight'), p.right_type || '—']].map(([k, v]) =>
             <div key={k} className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5"><span className="text-slate-500">{k}:</span> <span className="text-slate-800">{v}</span></div>)}
         </div>
         {!!Object.keys(s.measurements || {}).length && <div className="mt-2 text-xs">
-          <span className="text-slate-500">Measurements: </span>
+          <span className="text-slate-500">{t('trk.meas')} </span>
           {Object.entries(s.measurements).map(([k, m]: any) => <span key={k} className="text-gov-navy mr-2">{k} {m.sqm} m²</span>)}</div>}
       </div>
       {!!(docs || []).length && <div className="panel-pad">
-        <div className="font-semibold text-slate-900 text-sm mb-2 flex items-center gap-1.5"><FileText size={14} />Documents ({docs.length})</div>
-        {docs.map((d: any) => <button key={d.id} onClick={() => downloadDoc(d.filename)} className="block w-full text-left text-xs border-b border-slate-200 py-1.5 text-slate-600 hover:text-slate-900">✓ <b>{d.doc_type}</b>{d.doc_number ? ` — ${d.doc_number}` : ''} <span className="text-slate-500">· {d.authority || ''} · download</span></button>)}
+        <div className="font-semibold text-slate-900 text-sm mb-2 flex items-center gap-1.5"><FileText size={14} />{t('trk.docs', { n: docs.length })}</div>
+        {docs.map((d: any) => <button key={d.id} onClick={() => downloadDoc(d.filename)} className="block w-full text-left text-xs border-b border-slate-200 py-1.5 text-slate-600 hover:text-slate-900">✓ <b>{d.doc_type}</b>{d.doc_number ? ` — ${d.doc_number}` : ''} <span className="text-slate-500">· {d.authority || ''} {t('trk.download')}</span></button>)}
       </div>}
       <div className="panel-pad">
-        <div className="font-semibold text-slate-900 text-sm mb-2 flex items-center gap-1.5"><History size={14} />Timeline</div>
+        <div className="font-semibold text-slate-900 text-sm mb-2 flex items-center gap-1.5"><History size={14} />{t('trk.timeline')}</div>
         <div className="text-xs space-y-2.5">
           {(h?.reviews || []).map((r: any, i: number) => (
             <div key={i} className="flex gap-2.5"><div className="w-2 h-2 rounded-full bg-gov-navy mt-1 shrink-0" />
@@ -95,7 +99,7 @@ export function TrackSubmission() {
               <div className="text-slate-600">Field verification {f.verification_id}: {f.status}{f.recommendation ? ` → ${f.recommendation}` : ''}</div></div>))}
           {(h?.audit || []).map((a: any, i: number) => (
             <div key={i} className="text-[11px] text-slate-500 font-mono">{a.time?.slice(0, 16).replace('T', ' ')} · {a.user} · {a.action}</div>))}
-          {!(h?.reviews || []).length && <div className="text-slate-500">Awaiting first review.</div>}
+          {!(h?.reviews || []).length && <div className="text-slate-500">{t('trk.awaiting')}</div>}
         </div>
       </div>
     </div>

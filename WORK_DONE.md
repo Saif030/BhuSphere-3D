@@ -118,7 +118,7 @@ parcel "3 assets intersect" → Validation B03 (+3.4 m, Review) → History 2024
 scripts\run-backend.bat    :: pip install + uvicorn :8000  (docs: http://127.0.0.1:8000/docs)
 scripts\run-frontend.bat   :: npm install + vite :5173     (app:  http://localhost:5173)
 ```
-Logins: `officer|surveyor|admin|public` / `demo123`. Reset demo: `POST /api/seed` or delete `backend/bhu.db`.
+Logins: `officer|surveyor|admin|citizen` / `demo123` (verify needs no login). Reset demo: `POST /api/seed` or delete `backend/bhu.db`.
 Root files: `README.md` (setup/demo/API/prod path), `.env.example`, `docker-compose.yml` (postgis+api+web),
 `frontend/Dockerfile`, `backend/Dockerfile`, `docs/FUTURE.md`, `ml/README.md`, `data/` (empty, reserved).
 

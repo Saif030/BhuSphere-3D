@@ -1,4 +1,19 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { useLang } from '../lib/i18n';
+
+function ErrorFallback({ err, onReset }: { err: string; onReset: () => void }) {
+  const { t } = useLang();
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+      <div className="panel-pad max-w-md text-sm">
+        <div className="font-bold text-lg text-slate-900 mb-1">{t('fb.error')}</div>
+        <div className="text-slate-500 text-xs mb-3 font-mono">{err}</div>
+        <button onClick={onReset} className="btn-primary">{t('fb.home')}</button>
+      </div>
+    </div>
+  );
+}
 
 export class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err: string | null }> {
   state = { err: null as string | null };
@@ -6,17 +21,23 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
   componentDidCatch() {}
   render() {
     if (this.state.err)
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-          <div className="panel-pad max-w-md text-sm">
-            <div className="font-bold text-lg text-slate-900 mb-1">Something went wrong</div>
-            <div className="text-slate-500 text-xs mb-3 font-mono">{this.state.err}</div>
-            <button onClick={() => { this.setState({ err: null }); window.location.href = '/'; }} className="btn-primary">Back to home</button>
-          </div>
-        </div>
-      );
+      return <ErrorFallback err={this.state.err} onReset={() => { this.setState({ err: null }); window.location.href = '/'; }} />;
     return this.props.children;
   }
+}
+
+export function NotFound() {
+  const { t } = useLang();
+  return (
+    <div className="p-10 text-center text-sm max-w-md mx-auto">
+      <div className="font-bold text-lg text-slate-900">{t('fb.oops')}</div>
+      <div className="text-slate-500 mt-1">{t('fb.oopsSub')}</div>
+      <div className="flex gap-2 justify-center mt-4">
+        <Link to="/" className="btn-primary">{t('fb.homeBtn')}</Link>
+        <Link to="/verify" className="btn-ghost">{t('fb.verifyBtn')}</Link>
+      </div>
+    </div>
+  );
 }
 
 export function Skeleton({ className = '' }: { className?: string }) {

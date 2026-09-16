@@ -1,0 +1,125 @@
+================================================================================
+BhuSphere 3D — Project Flow, Login Roles & Access (SIH 2026, PS 26011)
+"From 2D Land Parcels to 3D Property Intelligence."
+================================================================================
+
+1. WHAT THIS PROJECT IS (hackathon explanation)
+--------------------------------------------------------------------------------
+Urban India stacks homes vertically, but cadastral maps stop at the ground
+parcel. BhuSphere 3D extends 2D parcel records into vertically structured
+property identities: Parcel -> Building -> Floor -> Unit, each with identity,
+geometry, evidence, confidence and verification state.
+
+Stack: React (Vite + TS + Tailwind + MapLibre + Three.js) -> FastAPI ->
+SQLAlchemy -> SQLite (demo) / PostGIS (prod path).
+Key services: ULPIN engine, property API, spatial queries, validation engine
+(12 deterministic checks), AI copilot (rule-based, safe), audit trail.
+IDs like DL-SKT-0182-B01-F08-U804 are PROTOTYPE demo references, NOT official
+Government of India ULPINs. Owner names are fictional. AI output is
+"AI-assisted assessment — requires official verification" and never confers
+legal title.
+
+2. END-TO-END FLOW
+--------------------------------------------------------------------------------
+PUBLIC (no login):
+  Home -> Verify Property (enter demo ULPIN / scan QR) -> Public Property
+  Identity card (safe fields + QR) -> Download PNG / PDF.
+  About / Services / How It Works / Help / Contact are open to all.
+
+CITIZEN LANE (verified claims):
+  Login as citizen -> Service Portal (/home)
+    -> Submit Property Data (7-step wizard: source, intent, property &
+       location with map pick, measurements in m2, ownership, documents,
+       review & declaration)
+    -> auto-validation + duplicate check
+    -> PENDING_VERIFICATION -> officer Verify Queue
+    -> officer may verify-start / approve / reject / request correction /
+       request field check (surveyor site visit -> recommendation)
+    -> citizen tracks timeline in My Submissions; on correction request
+       edits & resubmits (version bump: v1 -> v2)
+    -> on approve: live record, evidence, history, audit and notifications
+       all update; status INTEGRATED (immutable afterwards — further changes
+       need a fresh submission).
+
+DEPARTMENT LANE (authorized source):
+  Officer / surveyor / admin submits AS department (Submit as Government
+  Department) -> automatic technical validation -> INTEGRATED directly
+  (or NEEDS_REVIEW on duplicates) -> never enters the citizen queue.
+
+OFFICER LANE:
+  Dashboard -> Verify Queue -> Verify Workspace (compare claimed vs live
+  record, existing-record lookup, map/3D links, documents, decision with
+  mandatory reason) -> approve integrates; every action writes audit.
+
+SURVEYOR LANE:
+  Field Work (open pool, claim by opening) -> checklist + observed JSON +
+  notes -> recommendation APPROVE / REJECT / REQUEST_CORRECTION ->
+  back to officer for final decision.
+
+ADMIN LANE:
+  Everything above + Validation Center (run engine, resolve issues, B03
+  case file), Infrastructure (utilities), Reports (identity / evidence /
+  validation), Admin (datasets upload -> preview -> accept & commit as
+  Needs Review, confidence thresholds, full audit trail).
+
+3. LOGIN TYPES & ACCESS (password for all demo roles: demo123)
+--------------------------------------------------------------------------------
+| Role     | Landing      | Can do                                              | Cannot do            |
+|----------|--------------|-----------------------------------------------------|----------------------|
+| citizen  | /home        | submit + track + resubmit, verify, map/3D, QR, help | approve, field work  |
+| officer  | /dashboard   | verify queue + approve/reject/correct, field        | admin datasets/rules |
+|          |              | requests, validation, infra, reports, submit (as    |                      |
+|          |              | owner -> queue, or as dept -> auto)                 |                      |
+| surveyor | /dashboard   | field visits + geometry, submit as dept, map/3D     | approve, verify queue|
+| admin    | /dashboard   | all officer powers + datasets, thresholds, audit    | —                    |
+| anonymous| / (portal)   | Home, About, Services, How It Works, Verify +       | map/3D, submit, any  |
+| (nobody) |              | Property identity, downloads, Help, Contact         | workspace            |
+
+Notes:
+- There is NO public-user login by design: verification is free for all.
+- UI is bilingual (English / Hindi toggle, top bar + workspace header).
+- Status ladder: DRAFT -> PENDING_VERIFICATION -> UNDER_VERIFICATION ->
+  FIELD_CHECK -> CORRECTION_REQUIRED -> (resubmit, v+1) -> INTEGRATED;
+  side states: REJECTED (resubmittable), NEEDS_REVIEW (dept duplicates).
+- Trust ladder: UNVERIFIED (citizen) -> AUTHORIZED (dept) -> VERIFIED
+  (officer-approved).
+
+4. 3-MINUTE DEMO SCRIPT (judges)
+--------------------------------------------------------------------------------
+1. Dashboard -> KPIs (City scale / Live demo) -> Green Residency card.
+2. Map -> search "Green Residency" -> Building A -> Open 3D View.
+3. 3D -> floors B2..F12 -> F08 (exploded) -> unit 804.
+4. Property DL-SKT-0182-B01-F08-U804: 1,245 sq.ft, 96.4%, evidence tab.
+5. Copilot: "Why is apartment A804 marked 96.4%?" then "Show buildings
+   with height mismatch > 2m" (map highlights).
+6. Underground mode -> utility tubes; parcel shows intersecting assets.
+7. Validation -> B03 case file: registered 29.4 m vs LiDAR 32.8 m (+3.4 m)
+   -> Resolve -> audit trail grows.
+8. History (2024 -> 2026) -> QR tab -> scan -> public identity.
+9. Citizen: Submit Data -> map-pick -> measurements -> documents -> review
+   diff -> submit -> track SUB-ID -> officer queue -> approve.
+10. Admin: upload data/sample-*.geojson -> preview -> Accept & commit.
+
+5. KEY ROUTES (frontend -> backend)
+--------------------------------------------------------------------------------
+/verify, /property/:ulpin  -> GET /api/properties/{ulpin} (open, enriched:
+  address, geo, type, ownership flag, registration, authority, updated)
+/home (citizen)             -> GET /api/submissions/my
+/submit/new                -> POST /api/submissions, PUT /{sid},
+                              POST /{sid}/submit | /{sid}/resubmit
+/submit/queue, /verify/:sid-> GET /api/submissions/queue,
+                              POST /{sid}/review (verify-start|approve|
+                              reject|correction)
+/field-work[/:fvid]        -> GET /api/field-verification/assigned|/{fvid},
+                              POST /{fvid}/result
+/validation[/case/:entity] -> GET|POST /api/validation/issues|/run|/{id}/review
+/map, /3d                  -> /api/parcels, /buildings, /floors, /units,
+                              /utilities, /api/search
+Login                      -> POST /api/auth/login (JWT, 12 h)
+Seed/reset                 -> POST /api/seed or delete backend/bhu.db
+
+Run:  backend -> pip install -r requirements.txt +
+      uvicorn app.main:app --reload --port 8000
+      frontend -> npm install + npm run dev  (http://localhost:5173)
+Tests: backend -> python -m pytest tests/ -q (18 tests)
+       frontend -> npm test (18 tests, vitest)

@@ -1,4 +1,5 @@
 import { MapPin, LocateFixed, Home, Scale, ClipboardCheck, Landmark, CalendarCheck } from 'lucide-react';
+import { useLang } from '../lib/i18n';
 
 function Row({ icon: Icon, label, value, sub }: { icon: any; label: string; value: string; sub?: string }) {
   return (
@@ -15,24 +16,25 @@ function Row({ icon: Icon, label, value, sub }: { icon: any; label: string; valu
 
 /** Public-safe record facts for the identity card — flags only, no owner names. */
 export default function IdentityFacts({ u }: { u: any }) {
+  const { t } = useLang();
   const geo = u.lat != null && u.lng != null ? `${Number(u.lat).toFixed(4)}° N, ${Number(u.lng).toFixed(4)}° E` : null;
-  const typeCtx = [u.floor_usage ? `${u.floor_usage} floor` : '', u.building_type ? `${u.building_type} block` : '', u.land_use ? `${u.land_use} parcel` : ''].filter(Boolean).join(' · ');
+  const typeCtx = [u.floor_usage ? `${u.floor_usage} ${t('facts.floorW')}` : '', u.building_type ? `${u.building_type} ${t('facts.blockW')}` : '', u.land_use ? `${u.land_use} ${t('facts.parcelW')}` : ''].filter(Boolean).join(' · ');
   return (
     <div>
-      <div className="text-xs font-bold text-slate-900 mb-1.5">Record details</div>
+      <div className="text-xs font-bold text-slate-900 mb-1.5">{t('facts.title')}</div>
       <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
-        <Row icon={MapPin} label="Address / location" value={u.address || '—'} sub={u.survey_number ? `Survey ${u.survey_number}` : undefined} />
-        <Row icon={LocateFixed} label="Geolocation" value={geo || '—'} sub={u.parcel ? `Parcel ${u.parcel} · Building ${u.building || '—'}` : undefined} />
-        <Row icon={Home} label="Property type" value={u.property_type || '—'} sub={typeCtx || undefined} />
+        <Row icon={MapPin} label={t('facts.addr')} value={u.address || '—'} sub={u.survey_number ? t('facts.survey', { n: u.survey_number }) : undefined} />
+        <Row icon={LocateFixed} label={t('facts.geo')} value={geo || '—'} sub={u.parcel ? t('facts.parcelBld', { x: u.parcel, y: u.building || '—' }) : undefined} />
+        <Row icon={Home} label={t('facts.type')} value={u.property_type || '—'} sub={typeCtx || undefined} />
         <Row
           icon={Scale}
-          label="Ownership / legal flag"
-          value={u.ownership_type || 'Not recorded'}
-          sub={u.ownership_type && u.owner_record_status ? `Owner record ${u.owner_record_status.toLowerCase()}` : undefined}
+          label={t('facts.own')}
+          value={u.ownership_type || t('facts.ownNone')}
+          sub={u.ownership_type && u.owner_record_status ? (u.owner_record_status === 'Verified' ? t('facts.ownerRecV') : t('facts.ownerRecP')) : undefined}
         />
-        <Row icon={ClipboardCheck} label="Registration / mutation status" value={u.registration_status || '—'} />
-        <Row icon={Landmark} label="Data source / issuing authority" value={u.issuing_authority || '—'} sub={u.authority_detail || undefined} />
-        <Row icon={CalendarCheck} label="Last updated / verified" value={u.last_updated || '—'} />
+        <Row icon={ClipboardCheck} label={t('facts.reg')} value={u.registration_status || '—'} />
+        <Row icon={Landmark} label={t('facts.auth')} value={u.issuing_authority || '—'} sub={u.authority_detail || undefined} />
+        <Row icon={CalendarCheck} label={t('facts.updated')} value={u.last_updated || '—'} />
       </div>
     </div>
   );

@@ -163,7 +163,7 @@ class AuditLog(Base):
 # Citizen = authenticated user, UNVERIFIED data → human verification required.
 # Government department = authenticated + authorized source → auto-validate, no citizen queue.
 
-SUBMISSION_STATUSES = ("DRAFT", "SUBMITTED", "PENDING_VERIFICATION", "UNDER_VERIFICATION",
+SUBMISSION_STATUSES = ("DRAFT", "PENDING_VERIFICATION", "UNDER_VERIFICATION",
                        "FIELD_CHECK", "CORRECTION_REQUIRED", "APPROVED", "REJECTED",
                        "INTEGRATED", "NEEDS_REVIEW")
 

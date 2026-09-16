@@ -6,6 +6,7 @@ services:
     environment:
       - DATABASE_URL=postgresql+psycopg2://bhu:bhu@db:5432/bhu
       - JWT_SECRET=${JWT_SECRET:-dev-secret}
+      - LLM_API_KEY=${LLM_API_KEY:-}
       - DEMO_MODE=true
     depends_on:
       - db
